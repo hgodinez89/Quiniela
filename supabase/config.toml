@@ -1,0 +1,8 @@
+# Configuración del CLI de Supabase. `project_id` se reemplaza al hacer
+# `supabase link --project-ref <ref>` (o edítalo manualmente).
+project_id = "mundial-2026-quiniela"
+
+[functions.sync-scores]
+# La función se invoca desde pg_cron pasando la service_role key como Bearer
+# (un JWT válido), por lo que mantenemos la verificación de JWT activada.
+verify_jwt = true
