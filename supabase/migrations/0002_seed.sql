@@ -175,8 +175,10 @@ on conflict (external_id) do nothing;
 -- ---------------------------------------------------------------------------
 insert into public.app_config (key, value) values
   ('sync_enabled', 'true'),
-  ('score_sync_seconds', '1800'),      -- cadencia (openfootball se actualiza ~diario)
-  ('active_window_minutes', '180'),    -- reservado (no usado por el adaptador openfootball)
-  -- Fuente por defecto: openfootball (gratis, sin API key). Es la URL del archivo JSON.
+  ('score_sync_seconds', '60'),        -- cadencia (football-data refresca ~cada 60s)
+  ('active_window_minutes', '180'),    -- reservado
+  -- openfootball = estructura/llaves + respaldo de resultados finales (sin API key).
   ('score_api_base', 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json')
 on conflict (key) do update set value = excluded.value, updated_at = now();
+-- football-data.org = autoridad de marcador/estado en vivo. Su token va como SECRET
+-- de la Edge Function (FOOTBALL_DATA_TOKEN), no aquí. Ver DEPLOY.md.

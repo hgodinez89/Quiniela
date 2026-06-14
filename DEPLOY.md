@@ -91,23 +91,25 @@ update public.app_config
 set value = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json'
 where key = 'score_api_base';
 ```
-El adaptador (en `supabase/functions/sync-scores/index.ts`) ya está afinado a
-openfootball: empareja la fase de grupos por (grupo + pareja de equipos) y mapea
-nombres→códigos. Si más adelante cambias a una API de pago en vivo, solo se
-reescribe ese adaptador y la URL.
+**Marcador en vivo con football-data.org (MIX + failover).** La función combina:
+- **openfootball** = estructura (fixtures, slots de knockout con placeholders) y
+  **respaldo** de resultados finales.
+- **football-data.org** = autoridad de `status`/marcador **en vivo** (plan Free da
+  in-play ~cada 60s). Su token va como **secret** de la función (no en `app_config`):
+  ```bash
+  supabase secrets set FOOTBALL_DATA_TOKEN=tu_token_de_football_data
+  ```
+  Cadencia recomendada (1 llamada/min = 10% del límite Free de 10/min):
+  ```sql
+  update public.app_config set value = '60' where key = 'score_sync_seconds';
+  ```
 
-> ⚠️ **Limitación de openfootball**: se actualiza ~1 vez al día y **no tiene
-> estado "en vivo"** (solo trae el marcador cuando el partido terminó). Por eso
-> el banner "En vivo" del Home rara vez mostrará algo y los marcadores no van
-> minuto a minuto. Para live real hace falta una API de pago (p. ej. BALLDONTLIE
-> `https://api.balldontlie.io/fifa/worldcup/v1/matches`, ~$9.99/mes).
+> **Failover:** si football-data no responde, NO se borra el último marcador; y si
+> el partido terminó, openfootball rellena el resultado final (consistencia
+> eventual). Cuando football-data vuelve, retoma el control.
 
-Prueba la función manualmente:
-```bash
-supabase functions invoke sync-scores --no-verify-jwt
-```
-o desde el dashboard (Edge Functions → sync-scores → Invoke). Debe responder un
-JSON con `ok`/`updated` o `skipped` (si no hay partidos en la ventana activa).
+Prueba la función (ver "Cómo invocar" más abajo). El JSON trae diagnóstico:
+`fdOk`, `fdFetched`, `fdUpdated`, `backupUpdated`, `koUpserted`, `fdUnmatchedSample`.
 
 ---
 
