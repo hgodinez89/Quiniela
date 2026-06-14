@@ -13,9 +13,10 @@ export default function Nav({
     <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur">
       <nav className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-extrabold">
-          <span aria-hidden className="text-xl">⚽</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" className="h-8 w-8 object-contain" />
           <span className="tracking-tight">
-            Quiniela <span className="text-pitch">2026</span>
+            FIFA World Cup <span className="text-pitch">2026</span>
           </span>
         </Link>
         <div className="flex items-center gap-3 text-sm">
