@@ -62,7 +62,7 @@ export default async function HomePage() {
 
       <section>
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted">
-          Mis grupos
+          Mis grupos de quiniela
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {groups.map((g) => (

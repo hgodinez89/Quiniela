@@ -32,7 +32,14 @@ export default function LoginButton() {
         disabled={loading}
         className="btn-outline w-full py-3"
       >
-        <span aria-hidden className="text-base">G</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/google-icon.png"
+          width={64}
+          height={62}
+          alt=""
+          className="h-[18px] w-auto"
+        />
         {loading ? "Conectando…" : "Continuar con Google"}
       </button>
       {error && <p className="mt-2 text-center text-sm text-danger">{error}</p>}
