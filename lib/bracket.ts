@@ -14,6 +14,16 @@ export function winnerIsHome(m: MatchWithTeams): boolean | null {
   return m.home_score > m.away_score;
 }
 
+// Números de los cruces que alimentan a este partido (solo ganadores "W<n>").
+export function feederNums(m: MatchWithTeams): number[] {
+  const out: number[] = [];
+  for (const ph of [m.home_placeholder, m.away_placeholder]) {
+    const fm = (ph ?? "").match(/^W(\d+)$/i);
+    if (fm) out.push(Number(fm[1]));
+  }
+  return out;
+}
+
 export interface BracketColumn {
   stage: Stage;
   matches: MatchWithTeams[];
@@ -46,10 +56,7 @@ export function buildBracketColumns(ko: MatchWithTeams[]): {
       const m = byNum.get(num);
       if (!m) continue;
       levelMatches.push(m);
-      for (const ph of [m.home_placeholder, m.away_placeholder]) {
-        const fm = (ph ?? "").match(/^W(\d+)$/i); // solo ganadores alimentan el árbol
-        if (fm) next.push(Number(fm[1]));
-      }
+      next.push(...feederNums(m)); // solo ganadores alimentan el árbol
     }
     if (levelMatches.length) levels.push(levelMatches);
     frontier = next;
