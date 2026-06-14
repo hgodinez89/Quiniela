@@ -14,13 +14,17 @@ function Side({
 }) {
   return (
     <div className={`flex items-center justify-between gap-2 ${win ? "font-bold" : ""}`}>
-      <span className="flex items-center gap-1.5 truncate">
+      <span className="flex min-w-0 items-center gap-1.5">
         <Flag code={label.code} emoji={label.flag} name={label.name} />
-        <span className={`truncate text-sm ${label.known ? "" : "italic text-muted"}`}>
+        <span
+          className={`text-sm ${
+            label.known ? "truncate" : "whitespace-nowrap pr-0.5 italic text-muted"
+          }`}
+        >
           {label.name}
         </span>
       </span>
-      {score != null && <span className="tabular-nums text-sm">{score}</span>}
+      {score != null && <span className="shrink-0 tabular-nums text-sm">{score}</span>}
     </div>
   );
 }
