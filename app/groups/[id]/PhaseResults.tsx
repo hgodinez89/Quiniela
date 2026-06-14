@@ -32,6 +32,8 @@ export default function PhaseResults({
 }) {
   const byMatch = new Map<number, Prediction[]>();
   for (const p of predictions) {
+    // Ocultar predicciones de ex-participantes (ya no están en el grupo).
+    if (!(p.user_id in members)) continue;
     const arr = byMatch.get(p.match_id) ?? [];
     arr.push(p);
     byMatch.set(p.match_id, arr);
