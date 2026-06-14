@@ -17,6 +17,7 @@ import InviteForm from "./InviteForm";
 import PredictionPanel from "./PredictionPanel";
 import PhaseResults from "./PhaseResults";
 import DeleteGroupButton from "./DeleteGroupButton";
+import ScrollFab from "@/components/ScrollFab";
 
 export default async function GroupPage({
   params,
@@ -187,6 +188,8 @@ export default async function GroupPage({
       {isCreator && (
         <DeleteGroupButton groupId={id} groupName={group.name} />
       )}
+
+      <ScrollFab />
     </div>
   );
 }
