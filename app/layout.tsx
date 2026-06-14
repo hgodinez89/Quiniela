@@ -37,9 +37,14 @@ export default async function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
+      <body className="flex min-h-screen flex-col">
         {user && <Nav profile={profile} email={user.email ?? null} />}
-        <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
+          {children}
+        </main>
+        <footer className="border-t border-border py-4 text-center text-sm text-muted">
+          Hanzel Godinez © 2026
+        </footer>
       </body>
     </html>
   );
