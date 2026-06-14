@@ -1,4 +1,9 @@
-import { sideLabel, STAGE_SHORT, type MatchWithTeams } from "@/lib/types";
+import {
+  sideLabel,
+  STAGE_SHORT,
+  periodLabel,
+  type MatchWithTeams,
+} from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
 import Flag from "@/components/Flag";
 
@@ -64,6 +69,7 @@ export default function MatchCard({
           <span className="badge bg-danger/10 text-danger">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-danger" />
             EN VIVO
+            {periodLabel(match.live_period) ? ` · ${periodLabel(match.live_period)}` : ""}
           </span>
         ) : inCourse ? (
           <span className="badge bg-pitch/10 text-pitch">

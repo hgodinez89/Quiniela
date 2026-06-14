@@ -1,4 +1,9 @@
-import { sideLabel, type MatchWithTeams, type Prediction } from "@/lib/types";
+import {
+  sideLabel,
+  periodLabel,
+  type MatchWithTeams,
+  type Prediction,
+} from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
 import { predictionPoints } from "@/lib/scoring";
 import Flag from "@/components/Flag";
@@ -63,7 +68,10 @@ export default function PhaseResults({
               {m.status === "finished" ? (
                 <span className="badge bg-foreground/5 text-muted">Final</span>
               ) : m.status === "live" ? (
-                <span className="badge bg-danger/10 text-danger">EN VIVO</span>
+                <span className="badge bg-danger/10 text-danger">
+                  EN VIVO
+                  {periodLabel(m.live_period) ? ` · ${periodLabel(m.live_period)}` : ""}
+                </span>
               ) : null}
             </div>
 

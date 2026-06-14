@@ -68,7 +68,21 @@ export interface MatchRow {
   status: MatchStatus;
   home_score: number | null;
   away_score: number | null;
+  live_period: string | null;
   updated_at: string;
+}
+
+// Etiqueta de periodo en vivo (valores escritos por sync-scores).
+export const PERIOD_LABEL: Record<string, string> = {
+  "1H": "1er tiempo",
+  HT: "Medio tiempo",
+  "2H": "2do tiempo",
+  ET: "T. extra",
+  PEN: "Penales",
+};
+
+export function periodLabel(code: string | null | undefined): string | null {
+  return code ? (PERIOD_LABEL[code] ?? null) : null;
 }
 
 // Partido con relaciones cargadas (joins de Supabase)

@@ -158,7 +158,25 @@ interface FdMatch {
   status?: string;
   homeTeam?: FdTeam;
   awayTeam?: FdTeam;
-  score?: { fullTime?: { home: number | null; away: number | null } };
+  score?: {
+    duration?: string;
+    fullTime?: { home: number | null; away: number | null };
+    halfTime?: { home: number | null; away: number | null };
+  };
+}
+
+// Periodo en vivo a partir de los datos de football-data.
+function fdPeriod(fm: FdMatch): string | null {
+  if (fm.status === "PAUSED") return "HT";
+  if (fm.status === "IN_PLAY") {
+    const d = fm.score?.duration;
+    if (d === "EXTRA_TIME") return "ET";
+    if (d === "PENALTY_SHOOTOUT") return "PEN";
+    const ht = fm.score?.halfTime;
+    const htPlayed = ht && ht.home != null && ht.away != null;
+    return htPlayed ? "2H" : "1H";
+  }
+  return null;
 }
 
 interface OurMatch {
@@ -171,6 +189,7 @@ interface OurMatch {
   status: string;
   home_score: number | null;
   away_score: number | null;
+  live_period: string | null;
 }
 
 Deno.serve(async () => {
@@ -241,7 +260,7 @@ Deno.serve(async () => {
     const { data } = await supabase
       .from("matches")
       .select(
-        "id, external_id, stage, group_letter, home_team_id, away_team_id, status, home_score, away_score"
+        "id, external_id, stage, group_letter, home_team_id, away_team_id, status, home_score, away_score, live_period"
       );
     return (data ?? []) as OurMatch[];
   };
@@ -327,18 +346,20 @@ Deno.serve(async () => {
     target: OurMatch,
     status: string,
     home: number | null,
-    away: number | null
+    away: number | null,
+    period: string | null = null
   ) => {
     if (
       target.status === status &&
       target.home_score === home &&
-      target.away_score === away
+      target.away_score === away &&
+      target.live_period === period
     ) {
       return false; // sin cambios
     }
     const { error } = await supabase
       .from("matches")
-      .update({ status, home_score: home, away_score: away })
+      .update({ status, home_score: home, away_score: away, live_period: period })
       .eq("id", target.id);
     if (error) {
       pushErr(`update ${target.id}: ${error.message}`);
@@ -377,6 +398,7 @@ Deno.serve(async () => {
         continue;
       }
       const status = mapFdStatus(fm.status);
+      const period = status === "live" ? fdPeriod(fm) : null;
       const ft = fm.score?.fullTime;
       const homeIsHc = (idToCode.get(target.home_team_id ?? -1) ?? "") === hc;
       let h: number | null = null;
@@ -385,7 +407,7 @@ Deno.serve(async () => {
         h = homeIsHc ? ft.home : ft.away;
         a = homeIsHc ? ft.away : ft.home;
       }
-      const changed = await applyDynamic(target, status, h, a);
+      const changed = await applyDynamic(target, status, h, a, period);
       fdUpdatedIds.add(target.id);
       if (changed) fdUpdated++;
     }
