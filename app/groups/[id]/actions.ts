@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { inviteSchema, predictionsBatchSchema } from "@/lib/validation";
 import { sendInvitationEmail } from "@/lib/email";
@@ -73,6 +74,32 @@ export async function inviteMember(
     ok: true,
     message: `Invitación registrada ${why}. Pídele que entre con su Gmail: ${parsed.data.email}`,
   };
+}
+
+// --- Eliminar grupo (solo creador; RLS lo refuerza) -------------------------
+// El borrado de la fila de bet_groups elimina en cascada miembros, invitaciones,
+// predicciones y envíos (FKs on delete cascade). Acción IRREVERSIBLE.
+export async function deleteGroup(groupId: string): Promise<ActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "No autenticado" };
+
+  const { data, error } = await supabase
+    .from("bet_groups")
+    .delete()
+    .eq("id", groupId)
+    .select("id");
+
+  if (error) return { ok: false, error: "No se pudo eliminar el grupo." };
+  // RLS deja 0 filas borradas si no eres el creador.
+  if (!data || data.length === 0) {
+    return { ok: false, error: "No tienes permiso para eliminar este grupo." };
+  }
+
+  revalidatePath("/");
+  redirect("/");
 }
 
 // --- Quitar miembro (solo creador; RLS lo refuerza) -------------------------

@@ -16,6 +16,7 @@ import MembersList, { type MemberEntry } from "@/components/MembersList";
 import InviteForm from "./InviteForm";
 import PredictionPanel from "./PredictionPanel";
 import PhaseResults from "./PhaseResults";
+import DeleteGroupButton from "./DeleteGroupButton";
 
 export default async function GroupPage({
   params,
@@ -182,6 +183,10 @@ export default async function GroupPage({
           />
         )}
       </section>
+
+      {isCreator && (
+        <DeleteGroupButton groupId={id} groupName={group.name} />
+      )}
     </div>
   );
 }
