@@ -10,6 +10,9 @@ import {
 } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
 import Flag from "@/components/Flag";
+import MatchSearchBar from "@/components/MatchSearchBar";
+import ShowMoreButton from "@/components/ShowMoreButton";
+import { useSearchPaginate } from "@/lib/useSearchPaginate";
 import { savePredictions, submitPhase } from "./actions";
 
 type Draft = Record<number, { home: string; away: string }>;
@@ -33,6 +36,10 @@ export default function PredictionPanel({
   const [now] = useState(() => Date.now());
 
   const knockout = isKnockout(stage);
+
+  // Búsqueda + "ver más" (solo afecta la lista mostrada, no el % ni el envío)
+  const { query, setQuery, visible, total, shownCount, nextStep, showMore } =
+    useSearchPaginate(matches, 25);
 
   function predictable(m: MatchWithTeams): boolean {
     const open = new Date(m.kickoff_at).getTime() > now;
@@ -129,9 +136,14 @@ export default function PredictionPanel({
         )}
       </div>
 
+      {/* Búsqueda */}
+      {matches.length > 1 && (
+        <MatchSearchBar value={query} onChange={setQuery} />
+      )}
+
       {/* Lista de partidos */}
       <div className={knockout ? "grid gap-3 sm:grid-cols-2" : "space-y-3"}>
-        {matches.map((m) => (
+        {visible.map((m) => (
           <MatchPredictRow
             key={m.id}
             match={m}
@@ -142,6 +154,17 @@ export default function PredictionPanel({
           />
         ))}
       </div>
+      {total === 0 && (
+        <p className="card p-4 text-center text-sm text-muted">
+          Ningún partido coincide con la búsqueda.
+        </p>
+      )}
+      <ShowMoreButton
+        total={total}
+        shownCount={shownCount}
+        nextStep={nextStep}
+        onMore={showMore}
+      />
 
       {/* Acciones */}
       <div className="sticky bottom-3 z-10">

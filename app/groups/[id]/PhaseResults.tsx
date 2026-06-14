@@ -1,3 +1,5 @@
+"use client";
+
 import {
   sideLabel,
   periodLabel,
@@ -7,6 +9,9 @@ import {
 import { formatKickoff } from "@/lib/format";
 import { predictionPoints } from "@/lib/scoring";
 import Flag from "@/components/Flag";
+import MatchSearchBar from "@/components/MatchSearchBar";
+import ShowMoreButton from "@/components/ShowMoreButton";
+import { useSearchPaginate } from "@/lib/useSearchPaginate";
 
 interface MemberInfo {
   display_name: string | null;
@@ -44,13 +49,19 @@ export default function PhaseResults({
     byMatch.set(p.match_id, arr);
   }
 
+  const { query, setQuery, visible, total, shownCount, nextStep, showMore } =
+    useSearchPaginate(matches, 25);
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted">
         Enviaste esta fase. Aquí están los marcadores reales, tus puntos y las
         predicciones de los demás.
       </p>
-      {matches.map((m) => {
+      {matches.length > 1 && (
+        <MatchSearchBar value={query} onChange={setQuery} />
+      )}
+      {visible.map((m) => {
         const home = sideLabel(m.home_team, m.home_placeholder);
         const away = sideLabel(m.away_team, m.away_placeholder);
         const preds = (byMatch.get(m.id) ?? []).slice().sort((a, b) => {
@@ -138,6 +149,17 @@ export default function PhaseResults({
           </div>
         );
       })}
+      {total === 0 && (
+        <p className="card p-4 text-center text-sm text-muted">
+          Ningún partido coincide con la búsqueda.
+        </p>
+      )}
+      <ShowMoreButton
+        total={total}
+        shownCount={shownCount}
+        nextStep={nextStep}
+        onMore={showMore}
+      />
     </div>
   );
 }
