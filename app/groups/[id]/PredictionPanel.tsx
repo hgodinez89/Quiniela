@@ -202,9 +202,15 @@ function MatchPredictRow({
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className="flex items-center gap-2 truncate">
+        <span className="flex min-w-0 items-center gap-2">
           <Flag code={home.code} emoji={home.flag} name={home.name} />
-          <span className={`truncate text-sm ${home.known ? "" : "italic text-muted"}`}>
+          <span
+            className={
+              home.known
+                ? "truncate text-sm"
+                : "text-xs italic leading-tight text-muted [overflow-wrap:anywhere]"
+            }
+          >
             {home.name}
           </span>
         </span>
@@ -237,8 +243,14 @@ function MatchPredictRow({
           </span>
         )}
 
-        <span className="flex items-center justify-end gap-2 truncate text-right">
-          <span className={`truncate text-sm ${away.known ? "" : "italic text-muted"}`}>
+        <span className="flex min-w-0 items-center justify-end gap-2 text-right">
+          <span
+            className={
+              away.known
+                ? "truncate text-sm"
+                : "text-xs italic leading-tight text-muted [overflow-wrap:anywhere]"
+            }
+          >
             {away.name}
           </span>
           <Flag code={away.code} emoji={away.flag} name={away.name} />
