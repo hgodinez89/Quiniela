@@ -16,13 +16,16 @@ export default async function HomePage() {
   // Aceptar invitaciones pendientes al visitar (idempotente).
   await supabase.rpc("accept_my_invitations");
 
-  const { live, upcoming } = await getLiveAndUpcoming(supabase, 6);
+  const { current, currentIsLive, upcoming } = await getLiveAndUpcoming(
+    supabase,
+    6
+  );
   const { data: groupsData } = await supabase.rpc("get_my_groups");
   const groups = (groupsData ?? []) as MyGroup[];
 
   return (
     <div className="space-y-8">
-      <LiveMatchBanner initial={live} />
+      <LiveMatchBanner initial={current} initialIsLive={currentIsLive} />
 
       <section>
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted">

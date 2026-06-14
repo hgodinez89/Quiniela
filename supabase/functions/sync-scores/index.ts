@@ -193,7 +193,10 @@ Deno.serve(async () => {
       patch.away_score = homeIsTeam1 ? g2 : g1;
       patch.status = "finished";
     } else {
+      // No jugado en la fuente: limpiar marcador viejo (p. ej. del seed).
       patch.status = "scheduled";
+      patch.home_score = null;
+      patch.away_score = null;
     }
 
     matched++;
