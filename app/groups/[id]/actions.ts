@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { inviteSchema, predictionsBatchSchema } from "@/lib/validation";
+import { sendInvitationEmail } from "@/lib/email";
 import type { Stage } from "@/lib/types";
 
 export type ActionState = { ok: boolean; error?: string; message?: string };
@@ -30,15 +31,48 @@ export async function inviteMember(
     invited_by: user.id,
   });
 
+  let duplicate = false;
   if (error) {
-    if (error.code === "23505")
-      return { ok: false, error: "Ese correo ya fue invitado." };
-    // RLS bloquea a no-creadores -> mensaje genérico
-    return { ok: false, error: "No se pudo enviar la invitación." };
+    if (error.code === "23505") {
+      duplicate = true; // ya invitado -> reenviamos el correo
+    } else {
+      // RLS bloquea a no-creadores -> mensaje genérico
+      return { ok: false, error: "No se pudo crear la invitación." };
+    }
   }
 
+  // Datos para el correo
+  const [{ data: group }, { data: profile }] = await Promise.all([
+    supabase.from("bet_groups").select("name").eq("id", groupId).single(),
+    supabase.from("profiles").select("display_name").eq("id", user.id).single(),
+  ]);
+
+  const sent = await sendInvitationEmail({
+    to: parsed.data.email,
+    groupName: group?.name ?? "una quiniela",
+    inviterName: profile?.display_name ?? "Un amigo",
+  });
+
   revalidatePath(`/groups/${groupId}`);
-  return { ok: true, message: `Invitación enviada a ${parsed.data.email}` };
+
+  if (sent.ok) {
+    return {
+      ok: true,
+      message: duplicate
+        ? `Correo reenviado a ${parsed.data.email}`
+        : `Invitación enviada por correo a ${parsed.data.email}`,
+    };
+  }
+
+  // El correo no salió, pero la invitación quedó registrada.
+  const why =
+    sent.reason === "not_configured"
+      ? "(falta configurar el envío de correos)"
+      : "(no se pudo enviar el correo)";
+  return {
+    ok: true,
+    message: `Invitación registrada ${why}. Pídele que entre con su Gmail: ${parsed.data.email}`,
+  };
 }
 
 // --- Quitar miembro (solo creador; RLS lo refuerza) -------------------------

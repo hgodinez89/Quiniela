@@ -160,6 +160,28 @@ Database → Replication (o Realtime) → publica la tabla `public.matches`.
 
 ---
 
+## 7.b Correos de invitación (Resend) — opcional pero recomendado
+
+Sin esto, las invitaciones igual funcionan (el invitado se une al entrar con su Gmail),
+pero **no llega ningún correo**. Para enviar correo real:
+
+1. Crea cuenta en https://resend.com (gratis: 100 correos/día).
+2. **Domains → Add Domain**: agrega tu dominio (recomendado un subdominio, p. ej.
+   `send.tudominio.com`). Resend te da registros DNS (TXT-SPF, TXT-DKIM y MX); agrégalos
+   en tu proveedor de DNS y espera el estado **Verified**.
+   - Sin dominio verificado, Resend solo envía a tu propio correo (modo prueba).
+   - El dominio de envío es **independiente** del dominio del sitio (el sitio puede seguir
+     en `*.vercel.app`).
+3. **API Keys → Create**: copia la key.
+4. En **Vercel → Settings → Environment Variables** (Production y Preview), agrega como
+   **secretos de servidor** (NO `NEXT_PUBLIC`):
+   - `RESEND_API_KEY` = la API key.
+   - `EMAIL_FROM` = `Quiniela 2026 <invitaciones@send.tudominio.com>` (dominio verificado).
+5. **Redeploy** en Vercel.
+
+Prueba: invita un Gmail → debe llegar el correo con el nombre del grupo y un enlace a la
+app. Revisa entregas/errores en **Resend → Emails**.
+
 ## 8. Cerrar el círculo de OAuth con el dominio final
 
 1. **Google Cloud → Credentials → tu OAuth client → Authorized redirect URIs**:
