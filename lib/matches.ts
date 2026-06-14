@@ -20,6 +20,19 @@ export async function getStageMatches(
   return (data ?? []) as unknown as MatchWithTeams[];
 }
 
+const KNOCKOUT_STAGES = ["r32", "r16", "qf", "sf", "third", "final"];
+
+export async function getKnockoutMatches(
+  supabase: SupabaseClient
+): Promise<MatchWithTeams[]> {
+  const { data } = await supabase
+    .from("matches")
+    .select(MATCH_SELECT)
+    .in("stage", KNOCKOUT_STAGES)
+    .order("kickoff_at", { ascending: true });
+  return (data ?? []) as unknown as MatchWithTeams[];
+}
+
 // Ventana (min) tras el kickoff durante la cual consideramos un partido "en curso"
 // cuando la fuente no provee estado en vivo (caso openfootball).
 const IN_PROGRESS_MINUTES = 150;

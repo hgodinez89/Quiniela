@@ -27,6 +27,22 @@ export default async function HomePage() {
     <div className="space-y-8">
       <LiveMatchBanner initial={current} initialIsLive={currentIsLive} />
 
+      <Link
+        href="/posiciones"
+        className="card flex items-center justify-between p-4 transition-colors hover:bg-pitch/5"
+      >
+        <span className="flex items-center gap-3">
+          <span aria-hidden className="text-2xl">📊</span>
+          <span>
+            <span className="block font-bold">Posiciones y llaves</span>
+            <span className="block text-sm text-muted">
+              Tablas por grupo y cuadro de eliminatorias
+            </span>
+          </span>
+        </span>
+        <span aria-hidden className="text-muted">›</span>
+      </Link>
+
       <section>
         <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted">
           Próximos partidos

@@ -101,9 +101,22 @@ function parseKickoff(date?: string, time?: string): string | null {
   return `${date}T${hh}:${mm}:00${off}`;
 }
 
+// "Round of 32" -> 'r32', etc.
+function mapRound(round?: string): string | null {
+  const r = (round ?? "").toLowerCase().trim();
+  if (r === "round of 32") return "r32";
+  if (r === "round of 16") return "r16";
+  if (r.startsWith("quarter")) return "qf";
+  if (r.startsWith("semi")) return "sf";
+  if (r.includes("third")) return "third";
+  if (r === "final") return "final";
+  return null;
+}
+
 interface OFMatch {
   round?: string;
   group?: string;
+  num?: number;
   date?: string;
   time?: string;
   team1?: string;
@@ -148,6 +161,7 @@ Deno.serve(async () => {
   // 4) Índice de nuestros partidos de grupos por (grupo + pareja de códigos)
   const { data: teams } = await supabase.from("teams").select("id, code");
   const idToCode = new Map((teams ?? []).map((t) => [t.id, t.code]));
+  const codeToId = new Map((teams ?? []).map((t) => [t.code, t.id]));
   const { data: ourMatches } = await supabase
     .from("matches")
     .select("id, home_team_id, away_team_id, group_letter")
@@ -162,13 +176,47 @@ Deno.serve(async () => {
     keyToMatch.set(key, { id: m.id, homeCode: hc });
   }
 
-  // 5) Recorrer openfootball y actualizar la fase de grupos
+  // 5) Recorrer openfootball: fase de grupos (update) y knockout (upsert)
   let updated = 0;
   let matched = 0;
   const unmatched: string[] = [];
   const dbErrors: string[] = [];
+  const koRows: Record<string, unknown>[] = [];
+
   for (const om of ofMatches) {
-    if (!om.group) continue; // solo fase de grupos por ahora
+    if (!om.group) {
+      // ----- Knockout: lo poseemos por external_id 'of-<num>' -----
+      if (om.num == null) continue;
+      const stage = mapRound(om.round);
+      if (!stage) continue;
+      const c1 = codeFor(om.team1 ?? "");
+      const c2 = codeFor(om.team2 ?? "");
+      const id1 = c1 ? (codeToId.get(c1) ?? null) : null;
+      const id2 = c2 ? (codeToId.get(c2) ?? null) : null;
+      const kickoff = parseKickoff(om.date, om.time);
+      if (!kickoff) continue;
+      const row: Record<string, unknown> = {
+        external_id: `of-${om.num}`,
+        stage,
+        group_letter: null,
+        home_team_id: id1,
+        away_team_id: id2,
+        home_placeholder: id1 ? null : (om.team1 ?? null),
+        away_placeholder: id2 ? null : (om.team2 ?? null),
+        kickoff_at: kickoff,
+      };
+      if (om.score?.ft) {
+        row.home_score = om.score.ft[0];
+        row.away_score = om.score.ft[1];
+        row.status = "finished";
+      } else {
+        row.status = "scheduled";
+        row.home_score = null;
+        row.away_score = null;
+      }
+      koRows.push(row);
+      continue;
+    }
     const letter = om.group.replace(/group/i, "").trim().toUpperCase();
     const c1 = codeFor(om.team1 ?? "");
     const c2 = codeFor(om.team2 ?? "");
@@ -212,6 +260,20 @@ Deno.serve(async () => {
     }
   }
 
+  // 5b) Upsert de knockout (insert/update por external_id)
+  let koUpserted = 0;
+  if (koRows.length) {
+    const { data, error } = await supabase
+      .from("matches")
+      .upsert(koRows, { onConflict: "external_id" })
+      .select("id");
+    if (error) {
+      if (dbErrors.length < 5) dbErrors.push(`ko: ${error.message}`);
+    } else if (data) {
+      koUpserted = data.length;
+    }
+  }
+
   // 6) Marcar último sync
   await supabase
     .from("app_config")
@@ -226,6 +288,7 @@ Deno.serve(async () => {
     ourGroupMatches: keyToMatch.size,
     matched,
     updated,
+    koUpserted,
     unmatchedSample: unmatched.slice(0, 10),
     dbErrors,
   });
