@@ -22,8 +22,9 @@ export default function LoginPage() {
               alt="FIFA World Cup 2026"
               className="mx-auto h-24 w-auto drop-shadow"
             />
-            <h1 className="mt-3 text-2xl font-extrabold tracking-tight drop-shadow">
-              Quiniela Mundial 2026
+            <h1 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight drop-shadow">
+              <span className="block">Quiniela</span>
+              <span className="block">FIFA World Cup 2026</span>
             </h1>
             <p className="mt-1 text-sm text-white/90 drop-shadow">
               Predice los marcadores y compite con tus amigos.
