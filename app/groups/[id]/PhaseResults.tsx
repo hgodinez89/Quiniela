@@ -81,35 +81,50 @@ export default function PhaseResults({
               </span>
             </div>
 
-            <ul className="mt-3 divide-y divide-border border-t border-border">
-              {preds.length === 0 && (
-                <li className="py-2 text-center text-xs text-muted">
+            <div className="mt-3 border-t border-border">
+              {preds.length === 0 ? (
+                <p className="py-2 text-center text-xs text-muted">
                   Nadie predijo este partido.
-                </li>
-              )}
-              {preds.map((p) => {
-                const info = members[p.user_id];
-                const pts = predictionPoints(p, m);
-                const isMe = p.user_id === meId;
-                return (
-                  <li
-                    key={p.id}
-                    className={`flex items-center gap-2 py-1.5 text-sm ${
-                      isMe ? "font-medium" : ""
-                    }`}
-                  >
-                    <span className="flex-1 truncate">
-                      {info?.display_name || "Participante"}
-                      {isMe && <span className="text-muted"> (tú)</span>}
-                    </span>
-                    <span className="tabular-nums text-muted">
-                      {p.home_score} - {p.away_score}
-                    </span>
-                    <PointsBadge pts={pts} />
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {/* Encabezado de columnas */}
+                  <li className="flex items-center gap-2 py-1.5 text-[11px] uppercase tracking-wide text-muted">
+                    <span className="flex-1">Participante</span>
+                    <span className="w-14 text-center">Pred.</span>
+                    {m.status === "finished" && (
+                      <span className="w-12 text-center">Pts</span>
+                    )}
                   </li>
-                );
-              })}
-            </ul>
+                  {preds.map((p) => {
+                    const info = members[p.user_id];
+                    const pts = predictionPoints(p, m);
+                    const isMe = p.user_id === meId;
+                    return (
+                      <li
+                        key={p.id}
+                        className={`flex items-center gap-2 py-1.5 text-sm ${
+                          isMe ? "font-medium" : ""
+                        }`}
+                      >
+                        <span className="flex-1 truncate">
+                          {info?.display_name || "Participante"}
+                          {isMe && <span className="text-muted"> (tú)</span>}
+                        </span>
+                        <span className="w-14 text-center tabular-nums text-muted">
+                          {p.home_score} - {p.away_score}
+                        </span>
+                        {m.status === "finished" && (
+                          <span className="flex w-12 justify-center">
+                            <PointsBadge pts={pts} />
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
         );
       })}
