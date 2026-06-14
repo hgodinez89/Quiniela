@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { inviteSchema, predictionsBatchSchema } from "@/lib/validation";
+import { groupSchema, inviteSchema, predictionsBatchSchema } from "@/lib/validation";
 import { sendInvitationEmail } from "@/lib/email";
 import type { Stage } from "@/lib/types";
 
@@ -100,6 +100,38 @@ export async function deleteGroup(groupId: string): Promise<ActionState> {
 
   revalidatePath("/");
   redirect("/");
+}
+
+// --- Renombrar grupo (solo creador; RLS lo refuerza) ------------------------
+export async function renameGroup(
+  groupId: string,
+  name: string
+): Promise<ActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "No autenticado" };
+
+  const parsed = groupSchema.shape.name.safeParse(name);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Nombre inválido" };
+  }
+
+  const { data, error } = await supabase
+    .from("bet_groups")
+    .update({ name: parsed.data })
+    .eq("id", groupId)
+    .select("id");
+
+  if (error) return { ok: false, error: "No se pudo renombrar el grupo." };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "No tienes permiso para renombrar este grupo." };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/");
+  return { ok: true };
 }
 
 // --- Quitar miembro (solo creador; RLS lo refuerza) -------------------------

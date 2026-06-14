@@ -17,6 +17,7 @@ import InviteForm from "./InviteForm";
 import PredictionPanel from "./PredictionPanel";
 import PhaseResults from "./PhaseResults";
 import DeleteGroupButton from "./DeleteGroupButton";
+import GroupNameEditor from "./GroupNameEditor";
 import ScrollFab from "@/components/ScrollFab";
 
 export default async function GroupPage({
@@ -139,9 +140,13 @@ export default async function GroupPage({
         <Link href="/" className="text-sm text-muted hover:text-pitch">
           ← Inicio
         </Link>
-        <h1 className="mt-2 text-2xl font-extrabold tracking-tight">
-          {group.name}
-        </h1>
+        <div className="mt-2">
+          <GroupNameEditor
+            groupId={id}
+            initialName={group.name}
+            canEdit={isCreator}
+          />
+        </div>
         {group.description && (
           <p className="mt-1 text-sm text-muted">{group.description}</p>
         )}
