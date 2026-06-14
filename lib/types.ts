@@ -140,7 +140,13 @@ export interface GroupRankingRow {
 export function sideLabel(
   team: Team | null,
   placeholder: string | null
-): { name: string; flag: string | null; known: boolean } {
-  if (team) return { name: team.name, flag: team.flag_emoji, known: true };
-  return { name: placeholder ?? "Por definir", flag: null, known: false };
+): { name: string; flag: string | null; code: string | null; known: boolean } {
+  if (team)
+    return {
+      name: team.name,
+      flag: team.flag_emoji,
+      code: team.code,
+      known: true,
+    };
+  return { name: placeholder ?? "Por definir", flag: null, code: null, known: false };
 }

@@ -1,23 +1,24 @@
 import { sideLabel, STAGE_SHORT, type MatchWithTeams } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
+import Flag from "@/components/Flag";
 
 function TeamLine({
   flag,
   name,
+  code,
   score,
   known,
 }: {
   flag: string | null;
   name: string;
+  code: string | null;
   score: number | null;
   known: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="flex items-center gap-2 truncate">
-        <span aria-hidden className="text-lg">
-          {flag ?? "🏳️"}
-        </span>
+        <Flag code={code} emoji={flag} name={name} />
         <span className={`truncate ${known ? "" : "italic text-muted"}`}>
           {name}
         </span>

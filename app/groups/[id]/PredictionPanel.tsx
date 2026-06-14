@@ -9,6 +9,7 @@ import {
   type Stage,
 } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
+import Flag from "@/components/Flag";
 import { savePredictions, submitPhase } from "./actions";
 
 type Draft = Record<number, { home: string; away: string }>;
@@ -202,7 +203,7 @@ function MatchPredictRow({
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <span className="flex items-center gap-2 truncate">
-          <span aria-hidden>{home.flag ?? "🏳️"}</span>
+          <Flag code={home.code} emoji={home.flag} name={home.name} />
           <span className={`truncate text-sm ${home.known ? "" : "italic text-muted"}`}>
             {home.name}
           </span>
@@ -240,7 +241,7 @@ function MatchPredictRow({
           <span className={`truncate text-sm ${away.known ? "" : "italic text-muted"}`}>
             {away.name}
           </span>
-          <span aria-hidden>{away.flag ?? "🏳️"}</span>
+          <Flag code={away.code} emoji={away.flag} name={away.name} />
         </span>
       </div>
 

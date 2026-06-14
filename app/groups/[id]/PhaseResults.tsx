@@ -1,6 +1,7 @@
 import { sideLabel, type MatchWithTeams, type Prediction } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
 import { predictionPoints } from "@/lib/scoring";
+import Flag from "@/components/Flag";
 
 interface MemberInfo {
   display_name: string | null;
@@ -66,7 +67,8 @@ export default function PhaseResults({
 
             <div className="flex items-center justify-center gap-3 text-base font-semibold">
               <span className="flex items-center gap-1.5">
-                {home.flag} {home.name}
+                <Flag code={home.code} emoji={home.flag} name={home.name} />{" "}
+                {home.name}
               </span>
               <span className="tabular-nums">
                 {m.status === "finished"
@@ -74,7 +76,8 @@ export default function PhaseResults({
                   : "vs"}
               </span>
               <span className="flex items-center gap-1.5">
-                {away.name} {away.flag}
+                {away.name}{" "}
+                <Flag code={away.code} emoji={away.flag} name={away.name} />
               </span>
             </div>
 
