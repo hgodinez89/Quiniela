@@ -18,13 +18,26 @@ export default function RankingTable({
   meId: string;
   creatorId: string;
 }) {
+  // Orden: más puntos primero; en empate (incluidos los de 0), alfabético.
+  const sorted = [...entries].sort(
+    (a, b) =>
+      b.total_points - a.total_points ||
+      (a.display_name ?? "").localeCompare(b.display_name ?? "", "es", {
+        sensitivity: "base",
+      })
+  );
+  const allZero = entries.length > 0 && entries.every((e) => e.total_points === 0);
+
   return (
     <div className="card overflow-hidden">
-      <div className="border-b border-border px-4 py-3 text-sm font-semibold">
-        Ranking del grupo
+      <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm font-semibold">
+        <span>Ranking del grupo</span>
+        {allZero && (
+          <span className="text-xs font-normal text-muted">Sin puntos aún</span>
+        )}
       </div>
       <ul className="divide-y divide-border">
-        {entries.map((e) => {
+        {sorted.map((e) => {
           const isMe = e.user_id === meId;
           return (
             <li
@@ -34,7 +47,7 @@ export default function RankingTable({
               }`}
             >
               <span className="w-7 text-center text-sm font-bold tabular-nums text-muted">
-                {ordinal(e.position)}
+                {e.total_points === 0 ? "—" : ordinal(e.position)}
               </span>
               {e.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element

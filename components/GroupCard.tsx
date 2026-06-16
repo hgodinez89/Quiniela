@@ -26,7 +26,9 @@ export default function GroupCard({ group }: { group: MyGroup }) {
       <div className="mt-4 flex items-center justify-between text-sm">
         <span className="text-muted">{group.members_count} participantes</span>
         <span className="badge bg-pitch/10 text-pitch">
-          {group.position ? `${ordinal(group.position)} lugar` : "Sin ranking"}
+          {group.total_points > 0 && group.position
+            ? `${ordinal(group.position)} lugar`
+            : "Sin ranking aún"}
           {" · "}
           {group.total_points} pts
         </span>

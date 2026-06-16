@@ -13,6 +13,12 @@ import {
 import StageTabs from "@/components/StageTabs";
 import RankingTable, { type RankingEntry } from "@/components/RankingTable";
 import MembersList, { type MemberEntry } from "@/components/MembersList";
+import { ChampionBanner, PhaseWinnersPanel } from "@/components/WinnersPanel";
+import {
+  computeWinners,
+  type PhasePointRow,
+  type PhaseStatusRow,
+} from "@/lib/winners";
 import InviteForm from "./InviteForm";
 import PredictionPanel from "./PredictionPanel";
 import PhaseResults from "./PhaseResults";
@@ -83,6 +89,19 @@ export default async function GroupPage({
   });
   const ranking = (rankingData ?? []) as RankingEntry[];
 
+  // Ganadores por fase + campeón
+  const { data: phasePointsData } = await supabase.rpc(
+    "get_group_phase_points",
+    { p_group: id }
+  );
+  const { data: phaseStatusData } = await supabase
+    .from("v_phase_status")
+    .select("*");
+  const { champion, phases } = computeWinners(
+    (phasePointsData ?? []) as PhasePointRow[],
+    (phaseStatusData ?? []) as PhaseStatusRow[]
+  );
+
   // Partidos de la fase + predicciones
   const matches = await getStageMatches(supabase, stage);
   const matchIds = matches.map((m) => m.id);
@@ -152,7 +171,11 @@ export default async function GroupPage({
         )}
       </div>
 
+      <ChampionBanner champion={champion} />
+
       <RankingTable entries={ranking} meId={user.id} creatorId={group.creator_id} />
+
+      <PhaseWinnersPanel phases={phases} />
 
       <MembersList
         members={members}

@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { Profile } from "@/lib/types";
 import RemoveMemberButton from "@/app/groups/[id]/RemoveMemberButton";
 
@@ -20,12 +23,23 @@ export default function MembersList({
   meId: string;
   canManage: boolean;
 }) {
+  const [open, setOpen] = useState(false); // colapsado por defecto
+
   return (
     <div className="card overflow-hidden">
-      <div className="border-b border-border px-4 py-3 text-sm font-semibold">
-        Participantes ({members.length})
-      </div>
-      <ul className="divide-y divide-border">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-background"
+      >
+        <span>Participantes ({members.length})</span>
+        <span aria-hidden className="text-muted">
+          {open ? "▾" : "▸"}
+        </span>
+      </button>
+      {open && (
+      <ul className="divide-y divide-border border-t border-border">
         {members.map((m) => {
           const name = m.profile?.display_name || "Sin nombre";
           const isCreator = m.user_id === creatorId;
@@ -60,6 +74,7 @@ export default function MembersList({
           );
         })}
       </ul>
+      )}
     </div>
   );
 }
