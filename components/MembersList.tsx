@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
 import type { Profile } from "@/lib/types";
 import RemoveMemberButton from "@/app/groups/[id]/RemoveMemberButton";
+import CollapsibleCard from "@/components/CollapsibleCard";
 
 export interface MemberEntry {
   user_id: string;
@@ -23,23 +21,9 @@ export default function MembersList({
   meId: string;
   canManage: boolean;
 }) {
-  const [open, setOpen] = useState(false); // colapsado por defecto
-
   return (
-    <div className="card overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-background"
-      >
-        <span>Participantes ({members.length})</span>
-        <span aria-hidden className="text-muted">
-          {open ? "▾" : "▸"}
-        </span>
-      </button>
-      {open && (
-      <ul className="divide-y divide-border border-t border-border">
+    <CollapsibleCard title={`Participantes (${members.length})`}>
+      <ul className="divide-y divide-border">
         {members.map((m) => {
           const name = m.profile?.display_name || "Sin nombre";
           const isCreator = m.user_id === creatorId;
@@ -74,7 +58,6 @@ export default function MembersList({
           );
         })}
       </ul>
-      )}
-    </div>
+    </CollapsibleCard>
   );
 }

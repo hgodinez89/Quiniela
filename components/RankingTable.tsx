@@ -1,4 +1,5 @@
 import { ordinal } from "@/lib/format";
+import CollapsibleCard from "@/components/CollapsibleCard";
 
 export interface RankingEntry {
   user_id: string;
@@ -29,13 +30,11 @@ export default function RankingTable({
   const allZero = entries.length > 0 && entries.every((e) => e.total_points === 0);
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3 text-sm font-semibold">
-        <span>Ranking del grupo</span>
-        {allZero && (
-          <span className="text-xs font-normal text-muted">Sin puntos aún</span>
-        )}
-      </div>
+    <CollapsibleCard
+      title="Ranking del grupo"
+      defaultOpen
+      right={allZero ? "Sin puntos aún" : undefined}
+    >
       <ul className="divide-y divide-border">
         {sorted.map((e) => {
           const isMe = e.user_id === meId;
@@ -82,6 +81,6 @@ export default function RankingTable({
           );
         })}
       </ul>
-    </div>
+    </CollapsibleCard>
   );
 }

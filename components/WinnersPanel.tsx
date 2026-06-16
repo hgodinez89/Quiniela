@@ -1,5 +1,6 @@
 import { STAGE_LABEL, STAGES } from "@/lib/types";
 import type { Champion, PhaseWinner, WinnerEntry } from "@/lib/winners";
+import CollapsibleCard from "@/components/CollapsibleCard";
 
 function Avatar({ w }: { w: WinnerEntry }) {
   const name = w.display_name || "?";
@@ -61,10 +62,7 @@ export function ChampionBanner({ champion }: { champion: Champion }) {
 export function PhaseWinnersPanel({ phases }: { phases: PhaseWinner[] }) {
   const byStage = new Map(phases.map((p) => [p.stage, p]));
   return (
-    <div className="card overflow-hidden">
-      <div className="border-b border-border px-4 py-3 text-sm font-semibold">
-        Ganadores por fase
-      </div>
+    <CollapsibleCard title="Ganadores por fase">
       <ul className="divide-y divide-border">
         {STAGES.map((stage) => {
           const p = byStage.get(stage);
@@ -81,7 +79,7 @@ export function PhaseWinnersPanel({ phases }: { phases: PhaseWinner[] }) {
           );
         })}
       </ul>
-    </div>
+    </CollapsibleCard>
   );
 }
 
