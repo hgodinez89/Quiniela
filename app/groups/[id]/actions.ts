@@ -134,6 +134,39 @@ export async function renameGroup(
   return { ok: true };
 }
 
+// --- Editar descripción (solo creador; RLS lo refuerza) ---------------------
+export async function updateGroupDescription(
+  groupId: string,
+  description: string
+): Promise<ActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "No autenticado" };
+
+  const parsed = groupSchema.shape.description.safeParse(description);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Descripción inválida" };
+  }
+  const value = parsed.data && parsed.data.length > 0 ? parsed.data : null;
+
+  const { data, error } = await supabase
+    .from("bet_groups")
+    .update({ description: value })
+    .eq("id", groupId)
+    .select("id");
+
+  if (error) return { ok: false, error: "No se pudo actualizar la descripción." };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "No tienes permiso para editar este grupo." };
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
 // --- Quitar miembro (solo creador; RLS lo refuerza) -------------------------
 export async function removeMember(
   groupId: string,

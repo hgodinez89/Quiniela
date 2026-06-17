@@ -24,6 +24,7 @@ import PredictionPanel from "./PredictionPanel";
 import PhaseResults from "./PhaseResults";
 import DeleteGroupButton from "./DeleteGroupButton";
 import GroupNameEditor from "./GroupNameEditor";
+import GroupDescriptionEditor from "./GroupDescriptionEditor";
 import ScrollFab from "@/components/ScrollFab";
 
 export default async function GroupPage({
@@ -166,9 +167,11 @@ export default async function GroupPage({
             canEdit={isCreator}
           />
         </div>
-        {group.description && (
-          <p className="mt-1 text-sm text-muted">{group.description}</p>
-        )}
+        <GroupDescriptionEditor
+          groupId={id}
+          initialDescription={group.description}
+          canEdit={isCreator}
+        />
       </div>
 
       <ChampionBanner champion={champion} />
