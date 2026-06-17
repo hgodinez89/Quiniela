@@ -6,12 +6,13 @@ import {
   type MatchWithTeams,
   type Prediction,
 } from "@/lib/types";
+import { useState } from "react";
 import { formatKickoff } from "@/lib/format";
 import { predictionPoints } from "@/lib/scoring";
+import { filterMatchesByQuery } from "@/lib/matchSearch";
 import Flag from "@/components/Flag";
 import MatchSearchBar from "@/components/MatchSearchBar";
-import ShowMoreButton from "@/components/ShowMoreButton";
-import { useSearchPaginate } from "@/lib/useSearchPaginate";
+import MatchSection from "@/components/MatchSection";
 
 interface MemberInfo {
   display_name: string | null;
@@ -49,19 +50,13 @@ export default function PhaseResults({
     byMatch.set(p.match_id, arr);
   }
 
-  const { query, setQuery, visible, total, shownCount, nextStep, showMore } =
-    useSearchPaginate(matches, 25);
+  const [query, setQuery] = useState("");
+  const searching = query.trim() !== "";
+  const filtered = filterMatchesByQuery(matches, query);
+  const ongoing = filtered.filter((m) => m.status !== "finished");
+  const finishedList = filtered.filter((m) => m.status === "finished");
 
-  return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted">
-        Enviaste esta fase. Aquí están los marcadores reales, tus puntos y las
-        predicciones de los demás.
-      </p>
-      {matches.length > 1 && (
-        <MatchSearchBar value={query} onChange={setQuery} />
-      )}
-      {visible.map((m) => {
+  const renderMatch = (m: MatchWithTeams) => {
         const home = sideLabel(m.home_team, m.home_placeholder);
         const away = sideLabel(m.away_team, m.away_placeholder);
         const preds = (byMatch.get(m.id) ?? []).slice().sort((a, b) => {
@@ -148,18 +143,40 @@ export default function PhaseResults({
             </div>
           </div>
         );
-      })}
-      {total === 0 && (
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted">
+        Enviaste esta fase. Aquí están los marcadores reales, tus puntos y las
+        predicciones de los demás.
+      </p>
+      {matches.length > 1 && (
+        <MatchSearchBar value={query} onChange={setQuery} />
+      )}
+      <p className="text-sm text-muted">
+        Total: {filtered.length} partido{filtered.length === 1 ? "" : "s"} ·{" "}
+        {ongoing.length} en curso/por jugar · {finishedList.length} finalizados
+      </p>
+      <MatchSection
+        title="⏳ En curso o por jugar"
+        matches={ongoing}
+        defaultOpen
+        searching={searching}
+        renderItem={renderMatch}
+      />
+      <MatchSection
+        title="✅ Finalizados"
+        matches={finishedList}
+        defaultOpen={false}
+        searching={searching}
+        renderItem={renderMatch}
+      />
+      {searching && filtered.length === 0 && (
         <p className="card p-4 text-center text-sm text-muted">
           Ningún partido coincide con la búsqueda.
         </p>
       )}
-      <ShowMoreButton
-        total={total}
-        shownCount={shownCount}
-        nextStep={nextStep}
-        onMore={showMore}
-      />
     </div>
   );
 }

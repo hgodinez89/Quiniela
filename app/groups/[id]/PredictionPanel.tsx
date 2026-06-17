@@ -9,10 +9,10 @@ import {
   type Stage,
 } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
+import { filterMatchesByQuery } from "@/lib/matchSearch";
 import Flag from "@/components/Flag";
 import MatchSearchBar from "@/components/MatchSearchBar";
-import ShowMoreButton from "@/components/ShowMoreButton";
-import { useSearchPaginate } from "@/lib/useSearchPaginate";
+import MatchSection from "@/components/MatchSection";
 import { savePredictions, submitPhase } from "./actions";
 
 type Draft = Record<number, { home: string; away: string }>;
@@ -37,9 +37,12 @@ export default function PredictionPanel({
 
   const knockout = isKnockout(stage);
 
-  // Búsqueda + "ver más" (solo afecta la lista mostrada, no el % ni el envío)
-  const { query, setQuery, visible, total, shownCount, nextStep, showMore } =
-    useSearchPaginate(matches, 25);
+  // Búsqueda compartida (solo afecta lo mostrado, no el % ni el envío)
+  const [query, setQuery] = useState("");
+  const searching = query.trim() !== "";
+  const filtered = filterMatchesByQuery(matches, query);
+  const ongoing = filtered.filter((m) => m.status !== "finished");
+  const finishedList = filtered.filter((m) => m.status === "finished");
 
   function predictable(m: MatchWithTeams): boolean {
     const open = new Date(m.kickoff_at).getTime() > now;
@@ -141,9 +144,15 @@ export default function PredictionPanel({
         <MatchSearchBar value={query} onChange={setQuery} />
       )}
 
-      {/* Lista de partidos */}
-      <div className={knockout ? "grid gap-3 sm:grid-cols-2" : "space-y-3"}>
-        {visible.map((m) => (
+      {/* Resumen */}
+      <p className="text-sm text-muted">
+        Total: {filtered.length} partido{filtered.length === 1 ? "" : "s"} ·{" "}
+        {ongoing.length} en curso/por jugar · {finishedList.length} finalizados
+      </p>
+
+      {/* Paneles */}
+      {(() => {
+        const renderRow = (m: MatchWithTeams) => (
           <MatchPredictRow
             key={m.id}
             match={m}
@@ -152,19 +161,33 @@ export default function PredictionPanel({
             onChange={setScore}
             now={now}
           />
-        ))}
-      </div>
-      {total === 0 && (
+        );
+        return (
+          <>
+            <MatchSection
+              title="⏳ En curso o por jugar"
+              matches={ongoing}
+              defaultOpen
+              searching={searching}
+              gridCols={knockout}
+              renderItem={renderRow}
+            />
+            <MatchSection
+              title="✅ Finalizados"
+              matches={finishedList}
+              defaultOpen={false}
+              searching={searching}
+              gridCols={knockout}
+              renderItem={renderRow}
+            />
+          </>
+        );
+      })()}
+      {searching && filtered.length === 0 && (
         <p className="card p-4 text-center text-sm text-muted">
           Ningún partido coincide con la búsqueda.
         </p>
       )}
-      <ShowMoreButton
-        total={total}
-        shownCount={shownCount}
-        nextStep={nextStep}
-        onMore={showMore}
-      />
 
       {/* Acciones */}
       <div className="sticky bottom-3 z-10">
