@@ -42,7 +42,12 @@ export default function PredictionPanel({
   const searching = query.trim() !== "";
   const filtered = filterMatchesByQuery(matches, query);
   const ongoing = filtered.filter((m) => m.status !== "finished");
-  const finishedList = filtered.filter((m) => m.status === "finished");
+  const finishedList = filtered
+    .filter((m) => m.status === "finished")
+    .sort(
+      (a, b) =>
+        new Date(b.kickoff_at).getTime() - new Date(a.kickoff_at).getTime()
+    );
 
   function predictable(m: MatchWithTeams): boolean {
     const open = new Date(m.kickoff_at).getTime() > now;

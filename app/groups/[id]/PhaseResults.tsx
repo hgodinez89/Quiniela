@@ -54,7 +54,12 @@ export default function PhaseResults({
   const searching = query.trim() !== "";
   const filtered = filterMatchesByQuery(matches, query);
   const ongoing = filtered.filter((m) => m.status !== "finished");
-  const finishedList = filtered.filter((m) => m.status === "finished");
+  const finishedList = filtered
+    .filter((m) => m.status === "finished")
+    .sort(
+      (a, b) =>
+        new Date(b.kickoff_at).getTime() - new Date(a.kickoff_at).getTime()
+    );
 
   const renderMatch = (m: MatchWithTeams) => {
         const home = sideLabel(m.home_team, m.home_placeholder);
