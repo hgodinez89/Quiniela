@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   sideLabel,
   isKnockout,
+  periodLabel,
   type MatchWithTeams,
   type Stage,
 } from "@/lib/types";
@@ -239,6 +240,9 @@ function MatchPredictRow({
   const away = sideLabel(match.away_team, match.away_placeholder);
   const started = new Date(match.kickoff_at).getTime() <= now;
   const hasDraft = draft && (draft.home !== "" || draft.away !== "");
+  // Cerrado: ya inició y no terminó; no editable pero mostramos tu predicción.
+  const closed = !editable && started && match.status !== "finished";
+  const isLive = match.status === "live";
 
   return (
     <div className="card p-3">
@@ -247,9 +251,16 @@ function MatchPredictRow({
           {match.group_letter ? `Grupo ${match.group_letter} · ` : ""}
           {formatKickoff(match.kickoff_at)}
         </span>
-        {match.status === "finished" && (
+        {match.status === "finished" ? (
           <span className="badge bg-foreground/5 text-muted">Jugado</span>
-        )}
+        ) : closed && isLive ? (
+          <span className="badge bg-danger/10 text-danger">
+            EN VIVO
+            {periodLabel(match.live_period) ? ` · ${periodLabel(match.live_period)}` : ""}
+          </span>
+        ) : closed ? (
+          <span className="badge bg-foreground/5 text-muted">Cerrado</span>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -288,10 +299,18 @@ function MatchPredictRow({
           <span className="px-2 text-lg font-bold tabular-nums">
             {match.home_score}-{match.away_score}
           </span>
+        ) : closed ? (
+          <div className="flex items-center gap-1 opacity-70">
+            <span className="score-box bg-background">
+              {draft?.home !== "" && draft?.home != null ? draft.home : "–"}
+            </span>
+            <span className="text-muted">-</span>
+            <span className="score-box bg-background">
+              {draft?.away !== "" && draft?.away != null ? draft.away : "–"}
+            </span>
+          </div>
         ) : (
-          <span className="px-2 text-xs text-muted">
-            {started ? "Cerrado" : "Por definir"}
-          </span>
+          <span className="px-2 text-xs text-muted">Por definir</span>
         )}
 
         <span className="flex min-w-0 items-center justify-end gap-2 text-right">
@@ -311,6 +330,11 @@ function MatchPredictRow({
       {!editable && match.status === "finished" && !hasDraft && (
         <p className="mt-2 text-center text-xs text-muted">
           ⚠️ Partido ya jugado y no predicho por ti
+        </p>
+      )}
+      {closed && (
+        <p className="mt-2 text-center text-xs text-muted">
+          {hasDraft ? "Tu predicción (ya no editable)" : "No hiciste predicción"}
         </p>
       )}
     </div>
