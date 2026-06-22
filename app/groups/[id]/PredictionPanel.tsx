@@ -10,6 +10,7 @@ import {
   type Stage,
 } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
+import { predictionPoints } from "@/lib/scoring";
 import { filterMatchesByQuery } from "@/lib/matchSearch";
 import Flag from "@/components/Flag";
 import MatchSearchBar from "@/components/MatchSearchBar";
@@ -243,6 +244,20 @@ function MatchPredictRow({
   // Cerrado: ya inició y no terminó; no editable pero mostramos tu predicción.
   const closed = !editable && started && match.status !== "finished";
   const isLive = match.status === "live";
+  // Tus puntos en un partido finalizado que predijiste (solo los tuyos).
+  const myPoints =
+    match.status === "finished" && hasDraft && draft
+      ? predictionPoints(
+          { home_score: Number(draft.home), away_score: Number(draft.away) },
+          match
+        )
+      : null;
+  const ptsClass =
+    myPoints === 3
+      ? "bg-pitch text-white"
+      : myPoints === 1
+        ? "bg-accent/30 text-foreground"
+        : "bg-foreground/5 text-muted";
 
   return (
     <div className="card p-3">
@@ -327,7 +342,17 @@ function MatchPredictRow({
         </span>
       </div>
 
-      {!editable && match.status === "finished" && !hasDraft && (
+      {match.status === "finished" && hasDraft && draft && (
+        <p className="mt-2 flex items-center justify-center gap-2 text-xs text-muted">
+          <span>
+            Tu predicción: {draft.home}-{draft.away}
+          </span>
+          <span className={`badge ${ptsClass}`}>
+            {myPoints} pt{myPoints === 1 ? "" : "s"}
+          </span>
+        </p>
+      )}
+      {match.status === "finished" && !hasDraft && (
         <p className="mt-2 text-center text-xs text-muted">
           ⚠️ Partido ya jugado y no predicho por ti
         </p>
