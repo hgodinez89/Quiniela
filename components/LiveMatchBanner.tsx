@@ -14,33 +14,32 @@ const MATCH_SELECT = `
 
 const IN_PROGRESS_MINUTES = 150;
 
-// Banner del partido actual (en vivo real o "en curso" por horario).
+// Banner de los partidos actuales (en vivo reales o "en curso" por horario).
 // Se actualiza por Realtime (con polling de respaldo cada 60s).
 export default function LiveMatchBanner({
   initial,
   initialIsLive = false,
 }: {
-  initial: MatchWithTeams | null;
+  initial: MatchWithTeams[];
   initialIsLive?: boolean;
 }) {
-  const [current, setCurrent] = useState<MatchWithTeams | null>(initial);
+  const [currents, setCurrents] = useState<MatchWithTeams[]>(initial);
   const [isLive, setIsLive] = useState<boolean>(initialIsLive);
 
   const refetch = useCallback(async () => {
     const supabase = createClient();
-    // 1) En vivo real
+    // 1) En vivo real (todos)
     const { data: liveData } = await supabase
       .from("matches")
       .select(MATCH_SELECT)
       .eq("status", "live")
-      .order("kickoff_at", { ascending: true })
-      .limit(1);
-    if (liveData?.[0]) {
-      setCurrent(liveData[0] as MatchWithTeams);
+      .order("kickoff_at", { ascending: true });
+    if (liveData && liveData.length > 0) {
+      setCurrents(liveData as unknown as MatchWithTeams[]);
       setIsLive(true);
       return;
     }
-    // 2) En curso por horario
+    // 2) En curso por horario (todos en la ventana)
     const now = Date.now();
     const windowStart = new Date(now - IN_PROGRESS_MINUTES * 60_000).toISOString();
     const { data: byTime } = await supabase
@@ -49,9 +48,8 @@ export default function LiveMatchBanner({
       .neq("status", "finished")
       .lte("kickoff_at", new Date(now).toISOString())
       .gt("kickoff_at", windowStart)
-      .order("kickoff_at", { ascending: false })
-      .limit(1);
-    setCurrent((byTime?.[0] ?? null) as MatchWithTeams | null);
+      .order("kickoff_at", { ascending: false });
+    setCurrents((byTime ?? []) as unknown as MatchWithTeams[]);
     setIsLive(false);
   }, []);
 
@@ -75,7 +73,7 @@ export default function LiveMatchBanner({
     };
   }, [refetch]);
 
-  if (!current) {
+  if (currents.length === 0) {
     return (
       <div className="card p-5 text-center text-sm text-muted">
         No hay ningún partido en curso en este momento.
@@ -96,8 +94,18 @@ export default function LiveMatchBanner({
           }`}
         />
         {isLive ? "En vivo" : "En curso"}
+        {currents.length > 1 ? ` (${currents.length})` : ""}
       </h2>
-      <MatchCard match={current} highlightLive={isLive} inProgress={!isLive} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        {currents.map((m) => (
+          <MatchCard
+            key={m.id}
+            match={m}
+            highlightLive={isLive}
+            inProgress={!isLive}
+          />
+        ))}
+      </div>
     </div>
   );
 }

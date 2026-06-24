@@ -37,30 +37,29 @@ export async function getKnockoutMatches(
 // cuando la fuente no provee estado en vivo (caso openfootball).
 const IN_PROGRESS_MINUTES = 150;
 
-// Partido actual (en vivo real, o "en curso" por horario) + próximos N.
+// Partidos actuales (todos los en vivo, o los "en curso" por horario) + próximos N.
 export async function getLiveAndUpcoming(
   supabase: SupabaseClient,
   upcomingCount = 6
 ): Promise<{
-  current: MatchWithTeams | null;
-  currentIsLive: boolean;
+  currents: MatchWithTeams[];
+  currentsAreLive: boolean;
   upcoming: MatchWithTeams[];
 }> {
-  // 1) En vivo real (si la fuente lo provee)
+  // 1) En vivo real (todos los que la fuente marca live)
   const { data: liveData } = await supabase
     .from("matches")
     .select(MATCH_SELECT)
     .eq("status", "live")
-    .order("kickoff_at", { ascending: true })
-    .limit(1);
-  let current = (liveData?.[0] ?? null) as MatchWithTeams | null;
-  let currentIsLive = !!current;
+    .order("kickoff_at", { ascending: true });
+  let currents = (liveData ?? []) as unknown as MatchWithTeams[];
+  let currentsAreLive = currents.length > 0;
 
   const now = new Date();
   const nowIso = now.toISOString();
 
-  // 2) Si no hay live, buscar uno "en curso" por horario
-  if (!current) {
+  // 2) Si no hay live, buscar los "en curso" por horario (todos en la ventana)
+  if (currents.length === 0) {
     const windowStart = new Date(
       now.getTime() - IN_PROGRESS_MINUTES * 60_000
     ).toISOString();
@@ -70,24 +69,24 @@ export async function getLiveAndUpcoming(
       .neq("status", "finished")
       .lte("kickoff_at", nowIso)
       .gt("kickoff_at", windowStart)
-      .order("kickoff_at", { ascending: false })
-      .limit(1);
-    current = (byTime?.[0] ?? null) as MatchWithTeams | null;
-    currentIsLive = false;
+      .order("kickoff_at", { ascending: false });
+    currents = (byTime ?? []) as unknown as MatchWithTeams[];
+    currentsAreLive = false;
   }
 
-  // 3) Próximos por horario
+  // 3) Próximos por horario (excluyendo los actuales)
+  const currentIds = new Set(currents.map((m) => m.id));
   const { data: upData } = await supabase
     .from("matches")
     .select(MATCH_SELECT)
     .neq("status", "finished")
     .gt("kickoff_at", nowIso)
     .order("kickoff_at", { ascending: true })
-    .limit(upcomingCount + 1);
+    .limit(upcomingCount + currentIds.size + 1);
 
   const upcoming = ((upData ?? []) as unknown as MatchWithTeams[])
-    .filter((m) => !current || m.id !== current.id)
+    .filter((m) => !currentIds.has(m.id))
     .slice(0, upcomingCount);
 
-  return { current, currentIsLive, upcoming };
+  return { currents, currentsAreLive, upcoming };
 }

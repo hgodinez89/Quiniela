@@ -16,7 +16,7 @@ export default async function HomePage() {
   // Aceptar invitaciones pendientes al visitar (idempotente).
   await supabase.rpc("accept_my_invitations");
 
-  const { current, currentIsLive, upcoming } = await getLiveAndUpcoming(
+  const { currents, currentsAreLive, upcoming } = await getLiveAndUpcoming(
     supabase,
     6
   );
@@ -25,7 +25,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
-      <LiveMatchBanner initial={current} initialIsLive={currentIsLive} />
+      <LiveMatchBanner initial={currents} initialIsLive={currentsAreLive} />
 
       <Link
         href="/posiciones"
