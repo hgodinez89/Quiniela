@@ -9,7 +9,7 @@ export default function StageTabs({
   active: Stage;
 }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1">
+    <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-1">
       {STAGES.map((s) => (
         <Link
           key={s}

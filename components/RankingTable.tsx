@@ -113,7 +113,7 @@ export default function RankingTable({
 
       {/* Selector de fase (solo en modo Por fase) */}
       {mode === "phase" && (
-        <div className="flex gap-1.5 overflow-x-auto px-4 pt-2">
+        <div className="no-scrollbar flex gap-1.5 overflow-x-auto px-4 pt-2">
           {phases.map((s) => (
             <button
               key={s}

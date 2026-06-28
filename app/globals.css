@@ -73,3 +73,13 @@ body {
     @apply w-12 rounded-lg border border-border bg-surface py-2 text-center text-lg font-bold tabular-nums outline-none focus:border-pitch focus:ring-2 focus:ring-pitch/20;
   }
 }
+
+/* Oculta la barra de scroll (carruseles de chips/pestañas) manteniendo el
+   desplazamiento táctil. */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Edge antiguo */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
+}
