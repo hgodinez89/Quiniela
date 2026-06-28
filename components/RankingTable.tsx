@@ -44,8 +44,14 @@ export default function RankingTable({
   meId: string;
   creatorId: string;
 }) {
-  const [mode, setMode] = useState<"tournament" | "phase">("tournament");
   const { phases, defaultStage } = availablePhases(phaseStatus);
+  // Torneo terminado = la final ya se jugó (mismo criterio que el banner de campeón).
+  const finalPlayed =
+    (phaseStatus.find((s) => s.stage === "final")?.finished ?? 0) > 0;
+  // Por defecto: "Por fase" con la fase actual; al jugarse la final → "Torneo".
+  const [mode, setMode] = useState<"tournament" | "phase">(
+    finalPlayed ? "tournament" : "phase"
+  );
   const [stage, setStage] = useState<Stage>(defaultStage);
 
   // Filas según el modo
