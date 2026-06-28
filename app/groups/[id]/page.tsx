@@ -176,7 +176,18 @@ export default async function GroupPage({
 
       <ChampionBanner champion={champion} />
 
-      <RankingTable entries={ranking} meId={user.id} creatorId={group.creator_id} />
+      <RankingTable
+        entries={ranking}
+        members={members.map((m) => ({
+          user_id: m.user_id,
+          display_name: m.profile?.display_name ?? null,
+          avatar_url: m.profile?.avatar_url ?? null,
+        }))}
+        phasePoints={(phasePointsData ?? []) as PhasePointRow[]}
+        phaseStatus={(phaseStatusData ?? []) as PhaseStatusRow[]}
+        meId={user.id}
+        creatorId={group.creator_id}
+      />
 
       <PhaseWinnersPanel phases={phases} />
 

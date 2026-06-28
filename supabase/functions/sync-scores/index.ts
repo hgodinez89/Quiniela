@@ -156,6 +156,7 @@ interface FdMatch {
   stage?: string;
   group?: string | null;
   status?: string;
+  utcDate?: string;
   homeTeam?: FdTeam;
   awayTeam?: FdTeam;
   score?: {
@@ -186,6 +187,9 @@ interface OurMatch {
   group_letter: string | null;
   home_team_id: number | null;
   away_team_id: number | null;
+  home_placeholder: string | null;
+  away_placeholder: string | null;
+  kickoff_at: string;
   status: string;
   home_score: number | null;
   away_score: number | null;
@@ -260,7 +264,7 @@ Deno.serve(async () => {
     const { data } = await supabase
       .from("matches")
       .select(
-        "id, external_id, stage, group_letter, home_team_id, away_team_id, status, home_score, away_score, live_period"
+        "id, external_id, stage, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, kickoff_at, status, home_score, away_score, live_period"
       );
     return (data ?? []) as OurMatch[];
   };
@@ -322,21 +326,26 @@ Deno.serve(async () => {
 
   // 5) Cargar nuestros partidos (después del upsert de knockout) y construir índices
   const ours = await loadOurMatches();
-  const groupKey = new Map<string, OurMatch>(); // 'A|HC-AC'
-  const koKey = new Map<string, OurMatch>(); // 'r32|HC-AC' (equipos ya resueltos)
+  const groupKey = new Map<string, OurMatch>(); // 'A|HC-AC' (equipos ya resueltos)
+  // Knockout: emparejado por (ronda + instante de kickoff), no por equipos
+  // (porque los equipos aún no están resueltos). Detecta colisiones para no adivinar.
+  const koByTime = new Map<string, OurMatch>(); // 'r32|<ms>'
+  const koCollision = new Set<string>();
   const byExt = new Map<string, OurMatch>();
   const byId = new Map<number, OurMatch>();
   for (const m of ours) {
     byId.set(m.id, m);
     if (m.external_id) byExt.set(m.external_id, m);
-    const hc = m.home_team_id ? idToCode.get(m.home_team_id) : null;
-    const ac = m.away_team_id ? idToCode.get(m.away_team_id) : null;
-    if (hc && ac) {
-      if (m.stage === "group" && m.group_letter) {
+    if (m.stage === "group") {
+      const hc = m.home_team_id ? idToCode.get(m.home_team_id) : null;
+      const ac = m.away_team_id ? idToCode.get(m.away_team_id) : null;
+      if (hc && ac && m.group_letter) {
         groupKey.set(`${m.group_letter}|${[hc, ac].sort().join("-")}`, m);
-      } else if (m.stage !== "group") {
-        koKey.set(`${m.stage}|${[hc, ac].sort().join("-")}`, m);
       }
+    } else {
+      const koK = `${m.stage}|${new Date(m.kickoff_at).getTime()}`;
+      if (koByTime.has(koK)) koCollision.add(koK);
+      else koByTime.set(koK, m);
     }
   }
 
@@ -368,8 +377,50 @@ Deno.serve(async () => {
     return true;
   };
 
+  // Knockout: resuelve equipos (limpiando placeholders) + estado/marcador/periodo.
+  // home = homeTeam de football-data (orientación de la fuente).
+  const applyKnockout = async (
+    target: OurMatch,
+    hcId: number,
+    acId: number,
+    status: string,
+    home: number | null,
+    away: number | null,
+    period: string | null
+  ) => {
+    if (
+      target.home_team_id === hcId &&
+      target.away_team_id === acId &&
+      target.status === status &&
+      target.home_score === home &&
+      target.away_score === away &&
+      target.live_period === period
+    ) {
+      return false; // sin cambios
+    }
+    const { error } = await supabase
+      .from("matches")
+      .update({
+        home_team_id: hcId,
+        away_team_id: acId,
+        home_placeholder: null,
+        away_placeholder: null,
+        status,
+        home_score: home,
+        away_score: away,
+        live_period: period,
+      })
+      .eq("id", target.id);
+    if (error) {
+      pushErr(`ko update ${target.id}: ${error.message}`);
+      return false;
+    }
+    return true;
+  };
+
   // 6) PASS 2 — football-data AUTORIDAD (si respondió)
   let fdUpdated = 0;
+  let koResolved = 0;
   const fdUnmatched: string[] = [];
   if (fdOk) {
     for (const fm of fdMatches) {
@@ -377,39 +428,57 @@ Deno.serve(async () => {
       if (!stage) continue;
       const hc = fdCode(fm.homeTeam);
       const ac = fdCode(fm.awayTeam);
-      if (!hc || !ac) {
-        // En grupos los equipos SIEMPRE están definidos: si no mapea, es un alias faltante.
-        if (stage === "group" && fdUnmatched.length < 10) {
-          fdUnmatched.push(
-            `nomap:${fm.homeTeam?.tla ?? fm.homeTeam?.name}/${fm.awayTeam?.tla ?? fm.awayTeam?.name}`
-          );
-        }
-        continue; // knockout TBD -> dejar placeholder
-      }
-      let target: OurMatch | undefined;
-      if (stage === "group") {
-        const letter = (fm.group ?? "").replace(/group_/i, "").trim().toUpperCase();
-        target = groupKey.get(`${letter}|${[hc, ac].sort().join("-")}`);
-      } else {
-        target = koKey.get(`${stage}|${[hc, ac].sort().join("-")}`);
-      }
-      if (!target) {
-        if (fdUnmatched.length < 10) fdUnmatched.push(`${stage}:${hc}-${ac}`);
-        continue;
-      }
       const status = mapFdStatus(fm.status);
       const period = status === "live" ? fdPeriod(fm) : null;
       const ft = fm.score?.fullTime;
-      const homeIsHc = (idToCode.get(target.home_team_id ?? -1) ?? "") === hc;
-      let h: number | null = null;
-      let a: number | null = null;
-      if (ft && ft.home != null && ft.away != null) {
-        h = homeIsHc ? ft.home : ft.away;
-        a = homeIsHc ? ft.away : ft.home;
+
+      if (stage === "group") {
+        // Grupos: emparejar por (grupo + códigos). Los equipos siempre están definidos.
+        if (!hc || !ac) {
+          if (fdUnmatched.length < 10) {
+            fdUnmatched.push(
+              `nomap:${fm.homeTeam?.tla ?? fm.homeTeam?.name}/${fm.awayTeam?.tla ?? fm.awayTeam?.name}`
+            );
+          }
+          continue;
+        }
+        const letter = (fm.group ?? "").replace(/group_/i, "").trim().toUpperCase();
+        const target = groupKey.get(`${letter}|${[hc, ac].sort().join("-")}`);
+        if (!target) {
+          if (fdUnmatched.length < 10) fdUnmatched.push(`group:${hc}-${ac}`);
+          continue;
+        }
+        const homeIsHc = (idToCode.get(target.home_team_id ?? -1) ?? "") === hc;
+        let h: number | null = null;
+        let a: number | null = null;
+        if (ft && ft.home != null && ft.away != null) {
+          h = homeIsHc ? ft.home : ft.away;
+          a = homeIsHc ? ft.away : ft.home;
+        }
+        if (await applyDynamic(target, status, h, a, period)) fdUpdated++;
+        fdUpdatedIds.add(target.id);
+        continue;
       }
-      const changed = await applyDynamic(target, status, h, a, period);
+
+      // Knockout: emparejar por (ronda + instante de kickoff). Solo si fd ya
+      // tiene AMBOS equipos resueltos; si no, se deja el placeholder.
+      if (!hc || !ac || !fm.utcDate) continue;
+      const koK = `${stage}|${new Date(fm.utcDate).getTime()}`;
+      if (koCollision.has(koK)) continue; // ambiguo -> dejar a openfootball
+      const target = koByTime.get(koK);
+      if (!target) {
+        if (fdUnmatched.length < 10) fdUnmatched.push(`ko:${stage}@${fm.utcDate}`);
+        continue;
+      }
+      const hcId = codeToId.get(hc)!;
+      const acId = codeToId.get(ac)!;
+      const h = ft && ft.home != null ? ft.home : null;
+      const a = ft && ft.away != null ? ft.away : null;
+      if (await applyKnockout(target, hcId, acId, status, h, a, period)) {
+        fdUpdated++;
+        koResolved++;
+      }
       fdUpdatedIds.add(target.id);
-      if (changed) fdUpdated++;
     }
   }
 
@@ -448,6 +517,7 @@ Deno.serve(async () => {
     koUpserted,
     fdMatched: fdUpdatedIds.size,
     fdUpdated,
+    koResolved,
     backupUpdated,
     fdUnmatchedSample: fdUnmatched,
     dbErrors,

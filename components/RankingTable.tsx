@@ -1,5 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import { ordinal } from "@/lib/format";
+import { STAGE_SHORT, type Stage } from "@/lib/types";
 import CollapsibleCard from "@/components/CollapsibleCard";
+import {
+  availablePhases,
+  phaseRanking,
+  type PhaseRankMember,
+} from "@/lib/ranking";
+import type { PhasePointRow, PhaseStatusRow } from "@/lib/winners";
 
 export interface RankingEntry {
   user_id: string;
@@ -10,24 +20,65 @@ export interface RankingEntry {
   position: number;
 }
 
+interface Row {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  position: number;
+  points: number;
+  subtext: string;
+}
+
 export default function RankingTable({
   entries,
+  members,
+  phasePoints,
+  phaseStatus,
   meId,
   creatorId,
 }: {
   entries: RankingEntry[];
+  members: PhaseRankMember[];
+  phasePoints: PhasePointRow[];
+  phaseStatus: PhaseStatusRow[];
   meId: string;
   creatorId: string;
 }) {
-  // Orden: más puntos primero; en empate (incluidos los de 0), alfabético.
-  const sorted = [...entries].sort(
-    (a, b) =>
-      b.total_points - a.total_points ||
-      (a.display_name ?? "").localeCompare(b.display_name ?? "", "es", {
-        sensitivity: "base",
-      })
-  );
-  const allZero = entries.length > 0 && entries.every((e) => e.total_points === 0);
+  const [mode, setMode] = useState<"tournament" | "phase">("tournament");
+  const { phases, defaultStage } = availablePhases(phaseStatus);
+  const [stage, setStage] = useState<Stage>(defaultStage);
+
+  // Filas según el modo
+  let rows: Row[];
+  if (mode === "tournament") {
+    rows = [...entries]
+      .sort(
+        (a, b) =>
+          b.total_points - a.total_points ||
+          (a.display_name ?? "").localeCompare(b.display_name ?? "", "es", {
+            sensitivity: "base",
+          })
+      )
+      .map((e) => ({
+        user_id: e.user_id,
+        display_name: e.display_name,
+        avatar_url: e.avatar_url,
+        position: e.position,
+        points: e.total_points,
+        subtext: `${e.predicted_count} predich.`,
+      }));
+  } else {
+    rows = phaseRanking(members, phasePoints, stage).map((r) => ({
+      user_id: r.user_id,
+      display_name: r.display_name,
+      avatar_url: r.avatar_url,
+      position: r.position,
+      points: r.points,
+      subtext: `${r.exact_hits} exacto${r.exact_hits === 1 ? "" : "s"}`,
+    }));
+  }
+
+  const allZero = rows.length > 0 && rows.every((r) => r.points === 0);
 
   return (
     <CollapsibleCard
@@ -35,8 +86,54 @@ export default function RankingTable({
       defaultOpen
       right={allZero ? "Sin puntos aún" : undefined}
     >
-      <ul className="divide-y divide-border">
-        {sorted.map((e) => {
+      {/* Conmutador Torneo / Por fase */}
+      <div className="flex gap-1.5 px-4 pt-3">
+        <button
+          type="button"
+          onClick={() => setMode("tournament")}
+          className={`badge px-3 py-1.5 ${
+            mode === "tournament"
+              ? "bg-pitch text-white"
+              : "border border-border bg-surface text-muted hover:text-foreground"
+          }`}
+        >
+          Torneo
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("phase")}
+          className={`badge px-3 py-1.5 ${
+            mode === "phase"
+              ? "bg-pitch text-white"
+              : "border border-border bg-surface text-muted hover:text-foreground"
+          }`}
+        >
+          Por fase
+        </button>
+      </div>
+
+      {/* Selector de fase (solo en modo Por fase) */}
+      {mode === "phase" && (
+        <div className="flex gap-1.5 overflow-x-auto px-4 pt-2">
+          {phases.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStage(s)}
+              className={`badge whitespace-nowrap px-3 py-1.5 ${
+                s === stage
+                  ? "bg-foreground text-background"
+                  : "border border-border bg-surface text-muted hover:text-foreground"
+              }`}
+            >
+              {STAGE_SHORT[s]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <ul className="mt-2 divide-y divide-border border-t border-border">
+        {rows.map((e) => {
           const isMe = e.user_id === meId;
           return (
             <li
@@ -46,7 +143,7 @@ export default function RankingTable({
               }`}
             >
               <span className="w-7 text-center text-sm font-bold tabular-nums text-muted">
-                {e.total_points === 0 ? "—" : ordinal(e.position)}
+                {e.points === 0 ? "—" : ordinal(e.position)}
               </span>
               {e.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -71,11 +168,9 @@ export default function RankingTable({
               </span>
               <span className="text-right">
                 <span className="block text-sm font-bold tabular-nums">
-                  {e.total_points} pts
+                  {e.points} pts
                 </span>
-                <span className="block text-[11px] text-muted">
-                  {e.predicted_count} predich.
-                </span>
+                <span className="block text-[11px] text-muted">{e.subtext}</span>
               </span>
             </li>
           );
