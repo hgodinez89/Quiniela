@@ -83,3 +83,12 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome / Safari */
 }
+
+/* Chips de selector (pestañas de fase). Evita el "fantasma" de fondo al
+   cambiar de chip en iOS/WebKit (repaint en capa propia) y quita el destello
+   de tap. Inocuo en Android. */
+.chip-tab {
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}

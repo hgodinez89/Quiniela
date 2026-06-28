@@ -15,7 +15,7 @@ export default function StageTabs({
           key={s}
           href={`/groups/${groupId}?stage=${s}`}
           scroll={false}
-          className={`badge whitespace-nowrap px-3 py-1.5 ${
+          className={`chip-tab badge whitespace-nowrap px-3 py-1.5 ${
             s === active
               ? "bg-pitch text-white"
               : "border border-border bg-surface text-muted hover:text-foreground"

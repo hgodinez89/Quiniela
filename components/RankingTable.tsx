@@ -90,7 +90,7 @@ export default function RankingTable({
         <button
           type="button"
           onClick={() => onModeChange("tournament")}
-          className={`badge px-3 py-1.5 ${
+          className={`chip-tab badge px-3 py-1.5 ${
             mode === "tournament"
               ? "bg-pitch text-white"
               : "border border-border bg-surface text-muted hover:text-foreground"
@@ -101,7 +101,7 @@ export default function RankingTable({
         <button
           type="button"
           onClick={() => onModeChange("phase")}
-          className={`badge px-3 py-1.5 ${
+          className={`chip-tab badge px-3 py-1.5 ${
             mode === "phase"
               ? "bg-pitch text-white"
               : "border border-border bg-surface text-muted hover:text-foreground"
@@ -119,7 +119,7 @@ export default function RankingTable({
               key={s}
               type="button"
               onClick={() => onStageChange(s)}
-              className={`badge whitespace-nowrap px-3 py-1.5 ${
+              className={`chip-tab badge whitespace-nowrap px-3 py-1.5 ${
                 s === stage
                   ? "bg-foreground text-background"
                   : "border border-border bg-surface text-muted hover:text-foreground"
