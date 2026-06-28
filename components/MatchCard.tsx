@@ -22,14 +22,20 @@ function TeamLine({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="flex items-center gap-2 truncate">
+      <span className="flex min-w-0 items-center gap-2">
         <Flag code={code} emoji={flag} name={name} />
-        <span className={`truncate ${known ? "" : "italic text-muted"}`}>
+        <span
+          className={
+            known
+              ? "truncate"
+              : "text-sm italic leading-tight text-muted [overflow-wrap:anywhere]"
+          }
+        >
           {name}
         </span>
       </span>
       {score != null && (
-        <span className="text-lg font-bold tabular-nums">{score}</span>
+        <span className="shrink-0 text-lg font-bold tabular-nums">{score}</span>
       )}
     </div>
   );
