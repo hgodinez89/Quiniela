@@ -1,15 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { ordinal } from "@/lib/format";
 import { STAGE_SHORT, type Stage } from "@/lib/types";
 import CollapsibleCard from "@/components/CollapsibleCard";
-import {
-  availablePhases,
-  phaseRanking,
-  type PhaseRankMember,
-} from "@/lib/ranking";
-import type { PhasePointRow, PhaseStatusRow } from "@/lib/winners";
+import { phaseRanking, type PhaseRankMember } from "@/lib/ranking";
+import type { PhasePointRow } from "@/lib/winners";
 
 export interface RankingEntry {
   user_id: string;
@@ -33,27 +28,25 @@ export default function RankingTable({
   entries,
   members,
   phasePoints,
-  phaseStatus,
+  phases,
+  mode,
+  stage,
+  onModeChange,
+  onStageChange,
   meId,
   creatorId,
 }: {
   entries: RankingEntry[];
   members: PhaseRankMember[];
   phasePoints: PhasePointRow[];
-  phaseStatus: PhaseStatusRow[];
+  phases: Stage[];
+  mode: "tournament" | "phase";
+  stage: Stage;
+  onModeChange: (m: "tournament" | "phase") => void;
+  onStageChange: (s: Stage) => void;
   meId: string;
   creatorId: string;
 }) {
-  const { phases, defaultStage } = availablePhases(phaseStatus);
-  // Torneo terminado = la final ya se jugó (mismo criterio que el banner de campeón).
-  const finalPlayed =
-    (phaseStatus.find((s) => s.stage === "final")?.finished ?? 0) > 0;
-  // Por defecto: "Por fase" con la fase actual; al jugarse la final → "Torneo".
-  const [mode, setMode] = useState<"tournament" | "phase">(
-    finalPlayed ? "tournament" : "phase"
-  );
-  const [stage, setStage] = useState<Stage>(defaultStage);
-
   // Filas según el modo
   let rows: Row[];
   if (mode === "tournament") {
@@ -96,7 +89,7 @@ export default function RankingTable({
       <div className="flex gap-1.5 px-4 pt-3">
         <button
           type="button"
-          onClick={() => setMode("tournament")}
+          onClick={() => onModeChange("tournament")}
           className={`badge px-3 py-1.5 ${
             mode === "tournament"
               ? "bg-pitch text-white"
@@ -107,7 +100,7 @@ export default function RankingTable({
         </button>
         <button
           type="button"
-          onClick={() => setMode("phase")}
+          onClick={() => onModeChange("phase")}
           className={`badge px-3 py-1.5 ${
             mode === "phase"
               ? "bg-pitch text-white"
@@ -125,7 +118,7 @@ export default function RankingTable({
             <button
               key={s}
               type="button"
-              onClick={() => setStage(s)}
+              onClick={() => onStageChange(s)}
               className={`badge whitespace-nowrap px-3 py-1.5 ${
                 s === stage
                   ? "bg-foreground text-background"

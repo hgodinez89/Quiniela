@@ -11,9 +11,10 @@ import {
   type Stage,
 } from "@/lib/types";
 import StageTabs from "@/components/StageTabs";
-import RankingTable, { type RankingEntry } from "@/components/RankingTable";
+import { type RankingEntry } from "@/components/RankingTable";
+import GroupRanking from "@/components/GroupRanking";
 import MembersList, { type MemberEntry } from "@/components/MembersList";
-import { ChampionBanner, PhaseWinnersPanel } from "@/components/WinnersPanel";
+import { PhaseWinnersPanel } from "@/components/WinnersPanel";
 import {
   computeWinners,
   type PhasePointRow,
@@ -174,9 +175,7 @@ export default async function GroupPage({
         />
       </div>
 
-      <ChampionBanner champion={champion} />
-
-      <RankingTable
+      <GroupRanking
         entries={ranking}
         members={members.map((m) => ({
           user_id: m.user_id,
@@ -185,6 +184,8 @@ export default async function GroupPage({
         }))}
         phasePoints={(phasePointsData ?? []) as PhasePointRow[]}
         phaseStatus={(phaseStatusData ?? []) as PhaseStatusRow[]}
+        champion={champion}
+        phases={phases}
         meId={user.id}
         creatorId={group.creator_id}
       />

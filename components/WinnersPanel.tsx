@@ -1,6 +1,15 @@
 import { STAGE_LABEL, STAGES } from "@/lib/types";
-import type { Champion, PhaseWinner, WinnerEntry } from "@/lib/winners";
+import type { PhaseWinner, WinnerEntry } from "@/lib/winners";
 import CollapsibleCard from "@/components/CollapsibleCard";
+
+export interface BannerData {
+  icon: string;
+  label: string;
+  names: string | null; // null/"" => estado vacío ("se definirá…")
+  points: number;
+  emphasize?: boolean; // resalta (ring) para campeón/ganador de fase
+  emptyText?: string;
+}
 
 function Avatar({ w }: { w: WinnerEntry }) {
   const name = w.display_name || "?";
@@ -21,36 +30,34 @@ function names(winners: WinnerEntry[]): string {
   return winners.map((w) => w.display_name || "Sin nombre").join(", ");
 }
 
-export function ChampionBanner({ champion }: { champion: Champion }) {
-  if (champion.state === "none") {
+export function ChampionBanner({ data }: { data: BannerData }) {
+  if (!data.names) {
     return (
       <div className="card p-4 text-center text-sm text-muted">
-        🏆 El campeón se definirá conforme avancen los resultados.
+        {data.icon}{" "}
+        {data.emptyText ?? "Se definirá conforme avancen los resultados."}
       </div>
     );
   }
-  const isChamp = champion.state === "champion";
   return (
     <div
       className={`card overflow-hidden p-4 ${
-        isChamp ? "ring-2 ring-accent" : ""
+        data.emphasize ? "ring-2 ring-accent" : ""
       }`}
     >
       <div className="flex items-center gap-3">
         <span aria-hidden className="text-3xl">
-          {isChamp ? "🏆" : "👑"}
+          {data.icon}
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-xs font-bold uppercase tracking-wide text-muted">
-            {isChamp ? "Campeón de la quiniela" : "Líder del torneo (en curso)"}
+            {data.label}
           </div>
-          <div className="truncate text-lg font-extrabold">
-            {names(champion.winners)}
-          </div>
+          <div className="truncate text-lg font-extrabold">{data.names}</div>
         </div>
         <span className="shrink-0 text-right">
           <span className="block text-lg font-bold tabular-nums">
-            {champion.points}
+            {data.points}
           </span>
           <span className="block text-[11px] text-muted">pts</span>
         </span>
