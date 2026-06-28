@@ -3,6 +3,7 @@
 import {
   sideLabel,
   periodLabel,
+  penaltyWinnerLabel,
   type MatchWithTeams,
   type Prediction,
 } from "@/lib/types";
@@ -101,6 +102,12 @@ export default function PhaseResults({
                 <Flag code={away.code} emoji={away.flag} name={away.name} />
               </span>
             </div>
+
+            {penaltyWinnerLabel(m) && (
+              <p className="mt-1 text-center text-xs text-muted">
+                🥅 {penaltyWinnerLabel(m)}
+              </p>
+            )}
 
             <div className="mt-3 border-t border-border">
               {preds.length === 0 ? (

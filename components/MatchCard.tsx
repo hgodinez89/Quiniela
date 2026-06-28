@@ -2,6 +2,7 @@ import {
   sideLabel,
   STAGE_SHORT,
   periodLabel,
+  penaltyWinnerLabel,
   type MatchWithTeams,
 } from "@/lib/types";
 import { formatKickoff } from "@/lib/format";
@@ -92,6 +93,9 @@ export default function MatchCard({
         <TeamLine {...home} score={showScore ? match.home_score : null} />
         <TeamLine {...away} score={showScore ? match.away_score : null} />
       </div>
+      {penaltyWinnerLabel(match) && (
+        <p className="mt-1 text-xs text-muted">🥅 {penaltyWinnerLabel(match)}</p>
+      )}
       {match.stadium && (
         <p className="mt-2 truncate text-xs text-muted">
           📍 {match.stadium.name}, {match.stadium.city}

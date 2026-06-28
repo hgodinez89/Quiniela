@@ -7,10 +7,15 @@ export function matchNum(m: MatchWithTeams): number | null {
 }
 
 // Ganador de un partido finalizado (true = local). null si no resuelto.
+// En empate decidido por penales, gana quien ganó la tanda (penalty_winner).
 export function winnerIsHome(m: MatchWithTeams): boolean | null {
   if (m.status !== "finished" || m.home_score == null || m.away_score == null)
     return null;
-  if (m.home_score === m.away_score) return null; // empate (sin penales en datos)
+  if (m.home_score === m.away_score) {
+    if (m.penalty_winner === "home") return true;
+    if (m.penalty_winner === "away") return false;
+    return null;
+  }
   return m.home_score > m.away_score;
 }
 

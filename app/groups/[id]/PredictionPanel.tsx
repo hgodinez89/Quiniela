@@ -6,6 +6,7 @@ import {
   sideLabel,
   isKnockout,
   periodLabel,
+  penaltyWinnerLabel,
   type MatchWithTeams,
   type Stage,
 } from "@/lib/types";
@@ -342,6 +343,11 @@ function MatchPredictRow({
         </span>
       </div>
 
+      {penaltyWinnerLabel(match) && (
+        <p className="mt-2 text-center text-xs text-muted">
+          🥅 {penaltyWinnerLabel(match)}
+        </p>
+      )}
       {match.status === "finished" && hasDraft && draft && (
         <p className="mt-2 flex items-center justify-center gap-2 text-xs text-muted">
           <span>

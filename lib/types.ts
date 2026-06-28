@@ -69,6 +69,7 @@ export interface MatchRow {
   home_score: number | null;
   away_score: number | null;
   live_period: string | null;
+  penalty_winner: "home" | "away" | null;
   updated_at: string;
 }
 
@@ -83,6 +84,18 @@ export const PERIOD_LABEL: Record<string, string> = {
 
 export function periodLabel(code: string | null | undefined): string | null {
   return code ? (PERIOD_LABEL[code] ?? null) : null;
+}
+
+// Texto "X gana en penales" para un partido decidido por tanda.
+export function penaltyWinnerLabel(
+  match: Pick<MatchWithTeams, "penalty_winner" | "home_team" | "away_team" | "home_placeholder" | "away_placeholder">
+): string | null {
+  if (!match.penalty_winner) return null;
+  const side =
+    match.penalty_winner === "home"
+      ? sideLabel(match.home_team, match.home_placeholder)
+      : sideLabel(match.away_team, match.away_placeholder);
+  return `${side.name} gana en penales`;
 }
 
 // Partido con relaciones cargadas (joins de Supabase)

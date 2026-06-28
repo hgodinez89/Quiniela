@@ -161,9 +161,18 @@ interface FdMatch {
   awayTeam?: FdTeam;
   score?: {
     duration?: string;
+    winner?: string | null;
     fullTime?: { home: number | null; away: number | null };
     halfTime?: { home: number | null; away: number | null };
   };
+}
+
+// Ganador de penales (solo si se definió por tanda). 'home' | 'away' | null.
+function fdPenaltyWinner(fm: FdMatch): string | null {
+  if (fm.score?.duration !== "PENALTY_SHOOTOUT") return null;
+  if (fm.score?.winner === "HOME_TEAM") return "home";
+  if (fm.score?.winner === "AWAY_TEAM") return "away";
+  return null;
 }
 
 // Periodo en vivo a partir de los datos de football-data.
@@ -194,6 +203,7 @@ interface OurMatch {
   home_score: number | null;
   away_score: number | null;
   live_period: string | null;
+  penalty_winner: string | null;
 }
 
 Deno.serve(async () => {
@@ -264,7 +274,7 @@ Deno.serve(async () => {
     const { data } = await supabase
       .from("matches")
       .select(
-        "id, external_id, stage, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, kickoff_at, status, home_score, away_score, live_period"
+        "id, external_id, stage, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, kickoff_at, status, home_score, away_score, live_period, penalty_winner"
       );
     return (data ?? []) as OurMatch[];
   };
@@ -386,7 +396,8 @@ Deno.serve(async () => {
     status: string,
     home: number | null,
     away: number | null,
-    period: string | null
+    period: string | null,
+    penaltyWinner: string | null
   ) => {
     if (
       target.home_team_id === hcId &&
@@ -394,7 +405,8 @@ Deno.serve(async () => {
       target.status === status &&
       target.home_score === home &&
       target.away_score === away &&
-      target.live_period === period
+      target.live_period === period &&
+      target.penalty_winner === penaltyWinner
     ) {
       return false; // sin cambios
     }
@@ -409,6 +421,7 @@ Deno.serve(async () => {
         home_score: home,
         away_score: away,
         live_period: period,
+        penalty_winner: penaltyWinner,
       })
       .eq("id", target.id);
     if (error) {
@@ -474,7 +487,8 @@ Deno.serve(async () => {
       const acId = codeToId.get(ac)!;
       const h = ft && ft.home != null ? ft.home : null;
       const a = ft && ft.away != null ? ft.away : null;
-      if (await applyKnockout(target, hcId, acId, status, h, a, period)) {
+      const pen = fdPenaltyWinner(fm);
+      if (await applyKnockout(target, hcId, acId, status, h, a, period, pen)) {
         fdUpdated++;
         koResolved++;
       }
