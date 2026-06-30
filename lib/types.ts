@@ -70,6 +70,8 @@ export interface MatchRow {
   away_score: number | null;
   live_period: string | null;
   penalty_winner: "home" | "away" | null;
+  pen_home: number | null;
+  pen_away: number | null;
   updated_at: string;
 }
 
@@ -86,16 +88,32 @@ export function periodLabel(code: string | null | undefined): string | null {
   return code ? (PERIOD_LABEL[code] ?? null) : null;
 }
 
-// Texto "X gana en penales" para un partido decidido por tanda.
+// Texto "X gana en penales (G-P)" para un partido decidido por tanda.
+// El marcador se orienta ganador-perdedor.
 export function penaltyWinnerLabel(
-  match: Pick<MatchWithTeams, "penalty_winner" | "home_team" | "away_team" | "home_placeholder" | "away_placeholder">
+  match: Pick<
+    MatchWithTeams,
+    | "penalty_winner"
+    | "home_team"
+    | "away_team"
+    | "home_placeholder"
+    | "away_placeholder"
+    | "pen_home"
+    | "pen_away"
+  >
 ): string | null {
   if (!match.penalty_winner) return null;
-  const side =
-    match.penalty_winner === "home"
-      ? sideLabel(match.home_team, match.home_placeholder)
-      : sideLabel(match.away_team, match.away_placeholder);
-  return `${side.name} gana en penales`;
+  const isHome = match.penalty_winner === "home";
+  const side = isHome
+    ? sideLabel(match.home_team, match.home_placeholder)
+    : sideLabel(match.away_team, match.away_placeholder);
+  let score = "";
+  if (match.pen_home != null && match.pen_away != null) {
+    const winnerPk = isHome ? match.pen_home : match.pen_away;
+    const loserPk = isHome ? match.pen_away : match.pen_home;
+    score = ` (${winnerPk}-${loserPk})`;
+  }
+  return `${side.name} gana en penales${score}`;
 }
 
 // Partido con relaciones cargadas (joins de Supabase)

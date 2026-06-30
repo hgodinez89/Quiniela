@@ -164,6 +164,7 @@ interface FdMatch {
     winner?: string | null;
     fullTime?: { home: number | null; away: number | null };
     halfTime?: { home: number | null; away: number | null };
+    penalties?: { home: number | null; away: number | null };
   };
 }
 
@@ -204,6 +205,8 @@ interface OurMatch {
   away_score: number | null;
   live_period: string | null;
   penalty_winner: string | null;
+  pen_home: number | null;
+  pen_away: number | null;
 }
 
 Deno.serve(async () => {
@@ -274,7 +277,7 @@ Deno.serve(async () => {
     const { data } = await supabase
       .from("matches")
       .select(
-        "id, external_id, stage, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, kickoff_at, status, home_score, away_score, live_period, penalty_winner"
+        "id, external_id, stage, group_letter, home_team_id, away_team_id, home_placeholder, away_placeholder, kickoff_at, status, home_score, away_score, live_period, penalty_winner, pen_home, pen_away"
       );
     return (data ?? []) as OurMatch[];
   };
@@ -397,7 +400,9 @@ Deno.serve(async () => {
     home: number | null,
     away: number | null,
     period: string | null,
-    penaltyWinner: string | null
+    penaltyWinner: string | null,
+    penHome: number | null,
+    penAway: number | null
   ) => {
     if (
       target.home_team_id === hcId &&
@@ -406,7 +411,9 @@ Deno.serve(async () => {
       target.home_score === home &&
       target.away_score === away &&
       target.live_period === period &&
-      target.penalty_winner === penaltyWinner
+      target.penalty_winner === penaltyWinner &&
+      target.pen_home === penHome &&
+      target.pen_away === penAway
     ) {
       return false; // sin cambios
     }
@@ -422,6 +429,8 @@ Deno.serve(async () => {
         away_score: away,
         live_period: period,
         penalty_winner: penaltyWinner,
+        pen_home: penHome,
+        pen_away: penAway,
       })
       .eq("id", target.id);
     if (error) {
@@ -485,10 +494,23 @@ Deno.serve(async () => {
       }
       const hcId = codeToId.get(hc)!;
       const acId = codeToId.get(ac)!;
-      const h = ft && ft.home != null ? ft.home : null;
-      const a = ft && ft.away != null ? ft.away : null;
       const pen = fdPenaltyWinner(fm);
-      if (await applyKnockout(target, hcId, acId, status, h, a, period, pen)) {
+      const pk = fm.score?.penalties;
+      const penHome = pen ? (pk?.home ?? null) : null;
+      const penAway = pen ? (pk?.away ?? null) : null;
+      // Marcador del CAMPO: en penales, fullTime trae los penales sumados,
+      // así que restamos la tanda para obtener el empate del tiempo jugado.
+      let h = ft && ft.home != null ? ft.home : null;
+      let a = ft && ft.away != null ? ft.away : null;
+      if (pen && h != null && a != null && penHome != null && penAway != null) {
+        h = h - penHome;
+        a = a - penAway;
+      }
+      if (
+        await applyKnockout(
+          target, hcId, acId, status, h, a, period, pen, penHome, penAway
+        )
+      ) {
         fdUpdated++;
         koResolved++;
       }

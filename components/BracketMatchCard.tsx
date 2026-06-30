@@ -47,7 +47,15 @@ export default function BracketMatchCard({ match }: { match: MatchWithTeams }) {
         <Side label={away} score={finished ? match.away_score : null} win={wh === false} />
       </div>
       {match.penalty_winner && (
-        <p className="mt-1 text-center text-[10px] text-muted">(pen)</p>
+        <p className="mt-1 text-center text-[10px] text-muted">
+          {match.pen_home != null && match.pen_away != null
+            ? `(pen ${
+                match.penalty_winner === "home" ? match.pen_home : match.pen_away
+              }-${
+                match.penalty_winner === "home" ? match.pen_away : match.pen_home
+              })`
+            : "(pen)"}
+        </p>
       )}
     </div>
   );
