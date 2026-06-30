@@ -65,6 +65,19 @@ export function phaseRanking(
   return rows;
 }
 
+// Fase "actual / en curso": la primera fase (en orden) que existe pero no está
+// completa (total > finished). Si todas están completas (torneo terminado) → la
+// última que exista (Final). Si ninguna existe aún → "group".
+export function currentStage(status: PhaseStatusRow[]): Stage {
+  const byStage = new Map(status.map((s) => [s.stage, s]));
+  const existing = STAGES.filter((s) => (byStage.get(s)?.total ?? 0) > 0);
+  for (const s of existing) {
+    const st = byStage.get(s)!;
+    if (st.finished < st.total) return s;
+  }
+  return existing[existing.length - 1] ?? "group";
+}
+
 // Fases que existen en el torneo (total > 0), en orden, y la fase "actual"
 // por defecto: la más avanzada con al menos un partido finalizado; si ninguna,
 // la primera disponible.

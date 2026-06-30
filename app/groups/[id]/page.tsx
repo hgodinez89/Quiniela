@@ -10,6 +10,7 @@ import {
   type Profile,
   type Stage,
 } from "@/lib/types";
+import { currentStage } from "@/lib/ranking";
 import StageTabs from "@/components/StageTabs";
 import { type RankingEntry } from "@/components/RankingTable";
 import GroupRanking from "@/components/GroupRanking";
@@ -37,15 +38,23 @@ export default async function GroupPage({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const stage: Stage = STAGES.includes(sp.stage as Stage)
-    ? (sp.stage as Stage)
-    : "group";
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Estado de las fases (para el default de pestaña y los ganadores).
+  const { data: phaseStatusData } = await supabase
+    .from("v_phase_status")
+    .select("*");
+  const phaseStatusRows = (phaseStatusData ?? []) as PhaseStatusRow[];
+
+  // Fase por defecto = la actual/en curso (si no viene una válida en la URL).
+  const stage: Stage = STAGES.includes(sp.stage as Stage)
+    ? (sp.stage as Stage)
+    : currentStage(phaseStatusRows);
 
   // Grupo (RLS: solo miembros/creador pueden verlo)
   const { data: groupData } = await supabase
@@ -96,12 +105,9 @@ export default async function GroupPage({
     "get_group_phase_points",
     { p_group: id }
   );
-  const { data: phaseStatusData } = await supabase
-    .from("v_phase_status")
-    .select("*");
   const { champion, phases } = computeWinners(
     (phasePointsData ?? []) as PhasePointRow[],
-    (phaseStatusData ?? []) as PhaseStatusRow[]
+    phaseStatusRows
   );
 
   // Partidos de la fase + predicciones
@@ -183,7 +189,7 @@ export default async function GroupPage({
           avatar_url: m.profile?.avatar_url ?? null,
         }))}
         phasePoints={(phasePointsData ?? []) as PhasePointRow[]}
-        phaseStatus={(phaseStatusData ?? []) as PhaseStatusRow[]}
+        phaseStatus={phaseStatusRows}
         champion={champion}
         phases={phases}
         meId={user.id}

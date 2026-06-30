@@ -6,6 +6,8 @@ import { getStageMatches, getKnockoutMatches } from "@/lib/matches";
 import { computeGroupStandings } from "@/lib/standings";
 import { buildBracketColumns } from "@/lib/bracket";
 import { STAGE_LABEL, type Stage } from "@/lib/types";
+import { currentStage } from "@/lib/ranking";
+import type { PhaseStatusRow } from "@/lib/winners";
 import StandingsTable from "@/components/StandingsTable";
 import BracketMatchCard from "@/components/BracketMatchCard";
 import FullBracket from "@/components/FullBracket";
@@ -20,18 +22,36 @@ const KNOCKOUT_TABS: Record<string, Stage> = {
   final: "final",
 };
 
+// Fase del torneo -> clave de pestaña de /posiciones (no hay "3er lugar" aquí).
+const STAGE_TO_FASE: Record<Stage, string> = {
+  group: "grupos",
+  r32: "r32",
+  r16: "r16",
+  qf: "qf",
+  sf: "sf",
+  third: "final",
+  final: "final",
+};
+
 export default async function PosicionesPage({
   searchParams,
 }: {
   searchParams: Promise<{ fase?: string }>;
 }) {
-  const { fase = "grupos" } = await searchParams;
+  const sp = await searchParams;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Fase por defecto = la actual/en curso (si no viene una en la URL).
+  const { data: phaseStatusData } = await supabase
+    .from("v_phase_status")
+    .select("*");
+  const fase =
+    sp.fase ?? STAGE_TO_FASE[currentStage((phaseStatusData ?? []) as PhaseStatusRow[])];
 
   return (
     <div className="space-y-5">
