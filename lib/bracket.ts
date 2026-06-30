@@ -20,9 +20,15 @@ export function winnerIsHome(m: MatchWithTeams): boolean | null {
 }
 
 // Números de los cruces que alimentan a este partido (solo ganadores "W<n>").
+// Usa los feeders inmutables (no se borran al resolver el cruce). Respaldo a los
+// placeholders por si un slot aún no tuviera feeder poblado.
 export function feederNums(m: MatchWithTeams): number[] {
   const out: number[] = [];
-  for (const ph of [m.home_placeholder, m.away_placeholder]) {
+  const sources = [
+    m.home_feeder ?? m.home_placeholder,
+    m.away_feeder ?? m.away_placeholder,
+  ];
+  for (const ph of sources) {
     const fm = (ph ?? "").match(/^W(\d+)$/i);
     if (fm) out.push(Number(fm[1]));
   }

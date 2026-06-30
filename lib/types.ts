@@ -72,6 +72,8 @@ export interface MatchRow {
   penalty_winner: "home" | "away" | null;
   pen_home: number | null;
   pen_away: number | null;
+  home_feeder: string | null;
+  away_feeder: string | null;
   updated_at: string;
 }
 

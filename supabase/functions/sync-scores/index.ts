@@ -392,10 +392,14 @@ Deno.serve(async () => {
 
   // Knockout: resuelve equipos (limpiando placeholders) + estado/marcador/periodo.
   // home = homeTeam de football-data (orientación de la fuente).
+  // Resolución de knockout por LADO (parcial). hcId/acId pueden ser null si ese
+  // lado aún no está definido en la fuente; ese lado se conserva. NO borra los
+  // placeholders (el diagrama de llave los usa como feeders W<num>; sideLabel ya
+  // prioriza el equipo real para mostrar).
   const applyKnockout = async (
     target: OurMatch,
-    hcId: number,
-    acId: number,
+    hcId: number | null,
+    acId: number | null,
     status: string,
     home: number | null,
     away: number | null,
@@ -404,9 +408,11 @@ Deno.serve(async () => {
     penHome: number | null,
     penAway: number | null
   ) => {
+    const newHomeId = hcId ?? target.home_team_id;
+    const newAwayId = acId ?? target.away_team_id;
     if (
-      target.home_team_id === hcId &&
-      target.away_team_id === acId &&
+      target.home_team_id === newHomeId &&
+      target.away_team_id === newAwayId &&
       target.status === status &&
       target.home_score === home &&
       target.away_score === away &&
@@ -420,10 +426,8 @@ Deno.serve(async () => {
     const { error } = await supabase
       .from("matches")
       .update({
-        home_team_id: hcId,
-        away_team_id: acId,
-        home_placeholder: null,
-        away_placeholder: null,
+        home_team_id: newHomeId,
+        away_team_id: newAwayId,
         status,
         home_score: home,
         away_score: away,
@@ -482,9 +486,10 @@ Deno.serve(async () => {
         continue;
       }
 
-      // Knockout: emparejar por (ronda + instante de kickoff). Solo si fd ya
-      // tiene AMBOS equipos resueltos; si no, se deja el placeholder.
-      if (!hc || !ac || !fm.utcDate) continue;
+      // Knockout: emparejar por (ronda + instante de kickoff). Resolución
+      // PARCIAL: basta con que fd tenga al menos un equipo; el lado que falte
+      // se conserva como placeholder hasta que se defina.
+      if ((!hc && !ac) || !fm.utcDate) continue;
       const koK = `${stage}|${new Date(fm.utcDate).getTime()}`;
       if (koCollision.has(koK)) continue; // ambiguo -> dejar a openfootball
       const target = koByTime.get(koK);
@@ -492,8 +497,8 @@ Deno.serve(async () => {
         if (fdUnmatched.length < 10) fdUnmatched.push(`ko:${stage}@${fm.utcDate}`);
         continue;
       }
-      const hcId = codeToId.get(hc)!;
-      const acId = codeToId.get(ac)!;
+      const hcId = hc ? codeToId.get(hc)! : null;
+      const acId = ac ? codeToId.get(ac)! : null;
       const pen = fdPenaltyWinner(fm);
       const pk = fm.score?.penalties;
       const penHome = pen ? (pk?.home ?? null) : null;
