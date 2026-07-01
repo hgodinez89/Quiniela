@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getStageMatches } from "@/lib/matches";
+import { getStageMatches, getKnockoutMatches } from "@/lib/matches";
+import { buildBracketColumns } from "@/lib/bracket";
 import {
   STAGES,
   STAGE_LABEL,
@@ -28,6 +29,7 @@ import DeleteGroupButton from "./DeleteGroupButton";
 import GroupNameEditor from "./GroupNameEditor";
 import GroupDescriptionEditor from "./GroupDescriptionEditor";
 import ScrollFab from "@/components/ScrollFab";
+import BracketFab from "@/components/BracketFab";
 
 export default async function GroupPage({
   params,
@@ -51,10 +53,18 @@ export default async function GroupPage({
     .select("*");
   const phaseStatusRows = (phaseStatusData ?? []) as PhaseStatusRow[];
 
+  const activeStage = currentStage(phaseStatusRows);
+  const knockoutActive = activeStage !== "group";
+
   // Fase por defecto = la actual/en curso (si no viene una válida en la URL).
   const stage: Stage = STAGES.includes(sp.stage as Stage)
     ? (sp.stage as Stage)
-    : currentStage(phaseStatusRows);
+    : activeStage;
+
+  // Cuadro de eliminatorias (solo si el knockout ya está activo).
+  const bracket = knockoutActive
+    ? buildBracketColumns(await getKnockoutMatches(supabase))
+    : null;
 
   // Grupo (RLS: solo miembros/creador pueden verlo)
   const { data: groupData } = await supabase
@@ -239,6 +249,9 @@ export default async function GroupPage({
       )}
 
       <ScrollFab />
+      {bracket && (
+        <BracketFab columns={bracket.columns} third={bracket.third} />
+      )}
     </div>
   );
 }
