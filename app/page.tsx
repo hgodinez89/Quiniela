@@ -2,9 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLiveAndUpcoming } from "@/lib/matches";
+import { currentStage } from "@/lib/ranking";
+import { STAGE_SHORT } from "@/lib/types";
+import type { PhaseStatusRow } from "@/lib/winners";
 import LiveMatchBanner from "@/components/LiveMatchBanner";
 import MatchCard from "@/components/MatchCard";
 import GroupCard, { type MyGroup } from "@/components/GroupCard";
+
+interface PhaseStanding {
+  group_id: string;
+  phase_points: number;
+  phase_position: number;
+}
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -22,6 +31,19 @@ export default async function HomePage() {
   );
   const { data: groupsData } = await supabase.rpc("get_my_groups");
   const groups = (groupsData ?? []) as MyGroup[];
+
+  // Fase actual + posición del usuario en esa fase por grupo
+  const { data: phaseStatusData } = await supabase
+    .from("v_phase_status")
+    .select("*");
+  const stage = currentStage((phaseStatusData ?? []) as PhaseStatusRow[]);
+  const { data: standingData } = await supabase.rpc("get_my_phase_standing", {
+    p_stage: stage,
+  });
+  const standingByGroup = new Map(
+    ((standingData ?? []) as PhaseStanding[]).map((s) => [s.group_id, s])
+  );
+  const stageShort = STAGE_SHORT[stage];
 
   return (
     <div className="space-y-8">
@@ -65,9 +87,18 @@ export default async function HomePage() {
           Mis grupos de quiniela
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          {groups.map((g) => (
-            <GroupCard key={g.group_id} group={g} />
-          ))}
+          {groups.map((g) => {
+            const st = standingByGroup.get(g.group_id);
+            return (
+              <GroupCard
+                key={g.group_id}
+                group={g}
+                phaseShort={stageShort}
+                phasePoints={st?.phase_points ?? 0}
+                phasePosition={st?.phase_position ?? null}
+              />
+            );
+          })}
           <Link
             href="/groups/new"
             className="card grid min-h-[7rem] place-items-center border-2 border-dashed border-border p-4 text-center text-sm font-semibold text-pitch transition-colors hover:bg-pitch/5"
